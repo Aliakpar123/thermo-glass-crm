@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
-import { Order, OrderStatus, ORDER_STATUS_LABELS, PRODUCT_TYPE_LABELS } from '@/types';
+import { Order, OrderStatus, ORDER_STATUS_LABELS, PRODUCT_TYPE_LABELS, LOSS_REASON_LABELS } from '@/types';
 
 const STATUS_COLUMNS: OrderStatus[] = [
   'new',
@@ -61,13 +61,30 @@ export default function KanbanPage() {
     return orders.filter((o) => o.status === status);
   }
 
+  const [lossModal, setLossModal] = useState<{ orderId: number } | null>(null);
+  const [lossReason, setLossReason] = useState('');
+  const [lossOtherText, setLossOtherText] = useState('');
+
   async function handleStatusChange(orderId: number, newStatus: OrderStatus) {
     setMovingOrderId(null);
+    // If cancelling — show loss reason modal first
+    if (newStatus === 'cancelled') {
+      setLossModal({ orderId });
+      setLossReason('');
+      setLossOtherText('');
+      return;
+    }
+    await updateOrderStatus(orderId, newStatus);
+  }
+
+  async function updateOrderStatus(orderId: number, newStatus: OrderStatus, loss_reason?: string) {
     try {
+      const body: Record<string, string> = { status: newStatus };
+      if (loss_reason) body.loss_reason = loss_reason;
       const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setOrders((prev) =>
@@ -77,6 +94,13 @@ export default function KanbanPage() {
     } catch (err) {
       console.error('Failed to update status:', err);
     }
+  }
+
+  async function handleLossSubmit() {
+    if (!lossModal || !lossReason) return;
+    const reason = lossReason === 'other' ? lossOtherText || 'Другое' : lossReason;
+    await updateOrderStatus(lossModal.orderId, 'cancelled', reason);
+    setLossModal(null);
   }
 
   const cancelledOrders = getOrdersByStatus('cancelled');
@@ -317,6 +341,54 @@ export default function KanbanPage() {
           className="fixed inset-0 z-10"
           onClick={() => setMovingOrderId(null)}
         />
+      )}
+      {/* Loss reason modal */}
+      {lossModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Причина отмены заказа</h2>
+            <p className="text-sm text-gray-500 mb-4">Выберите причину отмены для аналитики</p>
+            <div className="space-y-2 mb-4">
+              {Object.entries(LOSS_REASON_LABELS).map(([key, label]) => (
+                <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="loss_reason"
+                    value={key}
+                    checked={lossReason === key}
+                    onChange={() => setLossReason(key)}
+                    className="accent-red-500"
+                  />
+                  <span className="text-sm text-gray-900">{label}</span>
+                </label>
+              ))}
+              {lossReason === 'other' && (
+                <input
+                  type="text"
+                  value={lossOtherText}
+                  onChange={(e) => setLossOtherText(e.target.value)}
+                  placeholder="Укажите причину..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1"
+                />
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleLossSubmit}
+                disabled={!lossReason}
+                className="flex-1 px-4 py-2.5 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 font-medium"
+              >
+                Отменить заказ
+              </button>
+              <button
+                onClick={() => setLossModal(null)}
+                className="px-4 py-2.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Назад
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   );
