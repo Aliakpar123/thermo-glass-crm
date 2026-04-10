@@ -118,6 +118,21 @@ async function initDb() {
     // Migrations - add columns if they don't exist
     try { await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS loss_reason TEXT DEFAULT ''`; } catch(e) { /* column may already exist */ }
     try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS loss_reason TEXT DEFAULT ''`; } catch(e) { /* column may already exist */ }
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action_date TIMESTAMP`; } catch(e) {}
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action_text TEXT DEFAULT ''`; } catch(e) {}
+
+    try {
+      await sql`CREATE TABLE IF NOT EXISTS deal_files (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER NOT NULL,
+        file_name TEXT NOT NULL,
+        file_url TEXT NOT NULL,
+        file_type TEXT DEFAULT '',
+        uploaded_by INTEGER,
+        uploaded_by_name TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT NOW()
+      )`;
+    } catch(e) {}
 
     // Seed users if empty
     const result = await sql`SELECT COUNT(*) as count FROM users`;

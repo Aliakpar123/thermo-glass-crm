@@ -6,7 +6,7 @@ export async function GET() {
     const sql = await getDb();
 
     const deals = await sql`
-      SELECT o.*, c.name as client_name, c.phone as client_phone, c.city as client_city,
+      SELECT o.*, o.next_action_date, o.next_action_text, c.name as client_name, c.phone as client_phone, c.city as client_city,
         u.name as manager_name,
         EXTRACT(DAY FROM NOW() - o.updated_at)::int as days_in_stage
       FROM orders o
@@ -26,19 +26,33 @@ export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
     const body = await request.json();
-    const { name, phone, city, source, comment, product_type, amount, manager_id } = body;
+    const { name, phone, city, source, comment, product_type, amount, manager_id, existing_client_id } = body;
 
-    if (!name || !phone) {
+    if (!existing_client_id && (!name || !phone)) {
       return NextResponse.json({ error: 'name and phone are required' }, { status: 400 });
     }
 
-    // 1. Find existing client by phone or create new one
-    const existing = await sql`SELECT id FROM clients WHERE phone = ${phone} LIMIT 1`;
     let clientId: number;
 
-    if (existing.length > 0) {
-      clientId = existing[0].id;
+    if (existing_client_id) {
+      // User confirmed: create deal for existing client
+      clientId = existing_client_id;
     } else {
+      // 1. Check for duplicate client by phone
+      const existing = await sql`SELECT id, name, phone, city, source, created_at FROM clients WHERE phone = ${phone} LIMIT 1`;
+
+      if (existing.length > 0) {
+        // Return duplicate info so frontend can ask user what to do
+        return NextResponse.json(
+          {
+            duplicate: true,
+            existing_client: existing[0],
+            message: 'Клиент с таким телефоном уже есть',
+          },
+          { status: 409 }
+        );
+      }
+
       const newClient = await sql`
         INSERT INTO clients (name, phone, city, source)
         VALUES (${name}, ${phone}, ${city || ''}, ${source || 'other'})
@@ -61,6 +75,9 @@ export async function POST(request: NextRequest) {
       INSERT INTO order_history (order_id, status, changed_by, comment)
       VALUES (${orderId}, 'new', ${mgr}, ${comment || 'Сделка создана'})
     `;
+
+    await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${mgr}, '', 'Создал сделку', 'deal', ${orderId}, ${(name || '') + ' ' + (phone || '')})`;
+
 
     // 4. Return the deal with all joined data
     const deal = await sql`

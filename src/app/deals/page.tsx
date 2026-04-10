@@ -95,6 +95,8 @@ interface Deal {
   client_city: string;
   manager_name: string;
   days_in_stage: number;
+  next_action_date: string | null;
+  next_action_text: string | null;
 }
 
 // --- WhatsApp SVG icon ---
@@ -177,6 +179,23 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
           {deal.days_in_stage != null ? `${deal.days_in_stage} \u0434\u043D` : ''}
         </span>
       </div>
+
+      {/* Reminder / next action */}
+      {deal.next_action_date && (() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const actionDate = new Date(deal.next_action_date);
+        actionDate.setHours(0, 0, 0, 0);
+        const dateStr = actionDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        const text = deal.next_action_text || '';
+        if (actionDate.getTime() < today.getTime()) {
+          return <div className="mt-1.5 text-xs text-red-600 truncate">{'Просрочено: ' + text + ' (' + dateStr + ')'}</div>;
+        } else if (actionDate.getTime() === today.getTime()) {
+          return <div className="mt-1.5 text-xs text-orange-600 truncate">{'Сегодня: ' + text}</div>;
+        } else {
+          return <div className="mt-1.5 text-xs text-gray-500 truncate">{text + ' (' + dateStr + ')'}</div>;
+        }
+      })()}
     </div>
   );
 }
@@ -292,10 +311,9 @@ function QuickAddModal({
   const [amount, setAmount] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ name: string; phone: string; id: number } | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim()) return;
+  async function createDealForClient(clientId: number) {
     setSaving(true);
     try {
       const userId = (session?.user as { id?: number })?.id || 1;
@@ -303,10 +321,7 @@ function QuickAddModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          city: city.trim(),
-          source,
+          existing_client_id: clientId,
           product_type: productType,
           amount: Number(amount) || 0,
           comment: comment.trim(),
@@ -325,10 +340,80 @@ function QuickAddModal({
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) return;
+    setSaving(true);
+    setDuplicateInfo(null);
+    try {
+      const userId = (session?.user as { id?: number })?.id || 1;
+      const res = await fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          city: city.trim(),
+          source,
+          product_type: productType,
+          amount: Number(amount) || 0,
+          comment: comment.trim(),
+          manager_id: userId,
+        }),
+      });
+      if (res.status === 409) {
+        const data = await res.json();
+        if (data.duplicate && data.existing_client) {
+          setDuplicateInfo({
+            name: data.existing_client.name,
+            phone: data.existing_client.phone,
+            id: data.existing_client.id,
+          });
+        }
+        return;
+      }
+      if (res.ok) {
+        const deal = await res.json();
+        onCreated(deal);
+        onClose();
+      }
+    } catch (err) {
+      console.error('Failed to create deal:', err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Новая сделка</h2>
+
+        {duplicateInfo && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+            <p className="text-sm font-medium text-gray-900 mb-2">
+              Клиент {duplicateInfo.name} с телефоном {duplicateInfo.phone} уже существует
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => createDealForClient(duplicateInfo.id)}
+                disabled={saving}
+                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                Создать новую сделку для этого клиента
+              </button>
+              <button
+                type="button"
+                onClick={() => setDuplicateInfo(null)}
+                className="px-3 py-2 text-xs font-medium text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">Имя клиента *</label>
@@ -440,6 +525,7 @@ export default function DealsPage() {
   const [activeOrder, setActiveOrder] = useState<Deal | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Loss reason modal
   const [lossModal, setLossModal] = useState<{ dealId: number } | null>(null);
@@ -464,11 +550,20 @@ export default function DealsPage() {
       .finally(() => setLoading(false));
   }
 
+  const filteredDeals = deals.filter((d) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (d.client_name || '').toLowerCase().includes(q) ||
+      (d.client_phone || '').toLowerCase().includes(q)
+    );
+  });
+
   const getDealsByStatus = useCallback(
     (status: OrderStatus): Deal[] => {
-      return deals.filter((d) => d.status === status);
+      return filteredDeals.filter((d) => d.status === status);
     },
-    [deals]
+    [filteredDeals]
   );
 
   async function updateDealStatus(dealId: number, newStatus: OrderStatus, loss_reason?: string) {
@@ -551,12 +646,32 @@ export default function DealsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-          >
-            + Сделка
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Поиск по имени или телефону..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-64 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm font-bold"
+                  title="Очистить"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            >
+              + Сделка
+            </button>
+          </div>
         </div>
 
         {/* Kanban board */}

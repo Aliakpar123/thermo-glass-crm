@@ -50,7 +50,8 @@ export async function PUT(
       dimensions, quantity, amount, prepayment, status,
       factory_order_number, comment, changed_by, loss_reason,
       object_city, items_json, heating_type, required_power,
-      multifunctional_glass, glass_color, room_type, room_area, total_area
+      multifunctional_glass, glass_color, room_type, room_area, total_area,
+      next_action_date, next_action_text
     } = body;
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
@@ -83,6 +84,8 @@ export async function PUT(
           room_type = ${room_type ?? existing.room_type},
           room_area = ${room_area ?? existing.room_area},
           total_area = ${total_area ?? existing.total_area},
+          next_action_date = ${next_action_date !== undefined ? next_action_date : existing.next_action_date},
+          next_action_text = ${next_action_text !== undefined ? next_action_text : existing.next_action_text},
           updated_at = NOW()
       WHERE id = ${Number(id)}
     `;
@@ -92,6 +95,7 @@ export async function PUT(
         INSERT INTO order_history (order_id, status, changed_by, comment)
         VALUES (${Number(id)}, ${status}, ${changed_by || existing.manager_id}, ${comment || `Статус изменён на "${status}"`})
       `;
+      await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${changed_by || existing.manager_id}, '', 'Изменил статус', 'deal', ${Number(id)}, ${'→ ' + status})`;
     }
 
     const updated = await sql`

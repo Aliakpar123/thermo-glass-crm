@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
+    await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${assigned_manager_id || null}, '', 'Добавил клиента', 'client', ${result[0].id}, ${name})`;
+
     return NextResponse.json(result[0], { status: 201 });
   } catch (error) {
     console.error('Error creating client:', error);

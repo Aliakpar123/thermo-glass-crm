@@ -38,6 +38,9 @@ export async function POST(
       VALUES (${clientId}, ${user_id || null}, ${user_name || ''}, ${text})
       RETURNING *
     `;
+
+    await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${user_id || null}, ${user_name || ''}, 'Добавил комментарий', 'client', ${Number(id)}, ${text.substring(0, 100)})`;
+
     return NextResponse.json(rows[0]);
   } catch (error) {
     console.error('Error creating comment:', error);

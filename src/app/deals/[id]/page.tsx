@@ -41,6 +41,19 @@ interface OrderWithHistory extends Order {
   client_phone?: string;
   client_city?: string;
   client_source?: LeadSource;
+  next_action_date?: string | null;
+  next_action_text?: string | null;
+}
+
+interface DealFile {
+  id: number;
+  order_id: number;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  uploaded_by: number | null;
+  uploaded_by_name: string;
+  created_at: string;
 }
 
 type TimelineItem = {
@@ -119,6 +132,15 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
 
+  // Next action / reminder
+  const [nextActionDate, setNextActionDate] = useState('');
+  const [nextActionText, setNextActionText] = useState('');
+  const [savingAction, setSavingAction] = useState(false);
+
+  // Files
+  const [files, setFiles] = useState<DealFile[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   const fetchData = async () => {
     try {
       const orderRes = await fetch(`/api/orders/${id}`);
@@ -131,6 +153,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       setOrder(orderData);
       setNewStatus(orderData.status);
       setFactoryOrderNumber(orderData.factory_order_number || '');
+      setNextActionDate(orderData.next_action_date ? orderData.next_action_date.split('T')[0] : '');
+      setNextActionText(orderData.next_action_text || '');
 
       if (orderData.client_id) {
         const commentsRes = await fetch(`/api/clients/${orderData.client_id}/comments`);
@@ -138,6 +162,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           const commentsData: ClientComment[] = await commentsRes.json();
           setComments(commentsData);
         }
+      }
+
+      // Fetch files
+      const filesRes = await fetch(`/api/orders/${id}/files`);
+      if (filesRes.ok) {
+        const filesData: DealFile[] = await filesRes.json();
+        setFiles(filesData);
       }
     } catch {
       // ignore
@@ -225,6 +256,58 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     } finally {
       setSendingComment(false);
     }
+  };
+
+  const handleSaveNextAction = async () => {
+    if (!order) return;
+    setSavingAction(true);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          next_action_date: nextActionDate || null,
+          next_action_text: nextActionText,
+        }),
+      });
+      if (res.ok) fetchData();
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Файл слишком большой (макс. 2МБ)');
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await fetch(`/api/orders/${id}/files`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_name: file.name,
+            file_data: base64,
+            file_type: file.type,
+            uploaded_by: (session?.user as Record<string, unknown>)?.id || null,
+            uploaded_by_name: session?.user?.name || '',
+          }),
+        });
+        if (res.ok) fetchData();
+        setUploadingFile(false);
+      };
+      reader.onerror = () => setUploadingFile(false);
+      reader.readAsDataURL(file);
+    } catch {
+      setUploadingFile(false);
+    }
+    e.target.value = '';
   };
 
   // Build combined timeline
