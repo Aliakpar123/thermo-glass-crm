@@ -7,11 +7,16 @@ import fs from 'fs';
 const isVercel = process.env.VERCEL === '1';
 const DB_DIR = isVercel ? '/tmp' : path.join(process.cwd(), 'db');
 const DB_PATH = path.join(DB_DIR, 'crm.db');
+const SEED_PATH = path.join(process.cwd(), 'db', 'seed.db');
 
 let db: Database.Database;
 
 function getDb(): Database.Database {
   if (!db) {
+    // On Vercel: copy seed DB to /tmp if not exists yet
+    if (isVercel && !fs.existsSync(DB_PATH) && fs.existsSync(SEED_PATH)) {
+      fs.copyFileSync(SEED_PATH, DB_PATH);
+    }
     if (!isVercel && !fs.existsSync(DB_DIR)) {
       fs.mkdirSync(DB_DIR, { recursive: true });
     }

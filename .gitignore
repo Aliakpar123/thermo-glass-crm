@@ -35,8 +35,10 @@ yarn-error.log*
 .env.local
 .env.production
 
-# database
-/db/*.db
+# database (keep seed.db for Vercel)
+/db/crm.db
+/db/crm.db-shm
+/db/crm.db-wal
 
 # vercel
 .vercel
