@@ -186,9 +186,11 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
 function DroppableColumn({
   status,
   deals,
+  onAddDeal,
 }: {
   status: OrderStatus;
   deals: Deal[];
+  onAddDeal?: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const colorClass = STATUS_COLORS[status].split(' ')[1];
@@ -238,6 +240,14 @@ function DroppableColumn({
             Перетащите сюда
           </div>
         )}
+        {onAddDeal && (
+          <button
+            onClick={onAddDeal}
+            className="w-full mt-2 py-2 border-2 border-dashed border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition font-medium"
+          >
+            + Новая сделка
+          </button>
+        )}
       </div>
     </div>
   );
@@ -276,7 +286,10 @@ function QuickAddModal({
   const { data: session } = useSession();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
   const [source, setSource] = useState<LeadSource>('whatsapp');
+  const [productType, setProductType] = useState('steklopaket');
+  const [amount, setAmount] = useState('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -292,7 +305,10 @@ function QuickAddModal({
         body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim(),
+          city: city.trim(),
           source,
+          product_type: productType,
+          amount: Number(amount) || 0,
           comment: comment.trim(),
           manager_id: userId,
         }),
@@ -336,17 +352,53 @@ function QuickAddModal({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Источник</label>
-            <select
-              value={source}
-              onChange={(e) => setSource(e.target.value as LeadSource)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Город</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Астана"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Источник</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value as LeadSource)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Тип продукта</label>
+              <select
+                value={productType}
+                onChange={(e) => setProductType(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Сумма ({'\u20B8'})</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">Комментарий</label>
@@ -354,7 +406,7 @@ function QuickAddModal({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={2}
-              placeholder="Интересуется стеклопакетом с обогревом..."
+              placeholder="Что хочет клиент, откуда написал..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -524,6 +576,7 @@ export default function DealsPage() {
                     key={status}
                     status={status}
                     deals={getDealsByStatus(status)}
+                    onAddDeal={status === 'new' ? () => setShowAddModal(true) : undefined}
                   />
                 ))}
               </div>

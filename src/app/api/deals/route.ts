@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
     const body = await request.json();
-    const { name, phone, source, comment, product_type, amount, manager_id } = body;
+    const { name, phone, city, source, comment, product_type, amount, manager_id } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ error: 'name and phone are required' }, { status: 400 });
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
       clientId = existing[0].id;
     } else {
       const newClient = await sql`
-        INSERT INTO clients (name, phone, source)
-        VALUES (${name}, ${phone}, ${source || 'other'})
+        INSERT INTO clients (name, phone, city, source)
+        VALUES (${name}, ${phone}, ${city || ''}, ${source || 'other'})
         RETURNING id
       `;
       clientId = newClient[0].id;
