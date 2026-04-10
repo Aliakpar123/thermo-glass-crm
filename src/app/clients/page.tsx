@@ -136,15 +136,15 @@ export default function ClientsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((client) => (
-                    <tr key={client.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={client.id} className="border-b last:border-0 hover:bg-gray-50 text-gray-900">
                       <td className="py-3">
                         <Link href={`/clients/${client.id}`} className="text-blue-600 hover:underline font-medium">
                           {client.name}
                         </Link>
                       </td>
-                      <td className="py-3">{client.phone}</td>
-                      <td className="py-3">{client.city || '\u2014'}</td>
-                      <td className="py-3">{LEAD_SOURCE_LABELS[client.source]}</td>
+                      <td className="py-3 text-gray-900">{client.phone}</td>
+                      <td className="py-3 text-gray-900">{client.city || '\u2014'}</td>
+                      <td className="py-3 text-gray-900">{LEAD_SOURCE_LABELS[client.source]}</td>
                       <td className="py-3 text-gray-500">
                         {new Date(client.created_at).toLocaleDateString('ru-RU')}
                       </td>
