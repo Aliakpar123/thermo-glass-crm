@@ -85,7 +85,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Change password */}
+        {/* Change password - only admin */}
+        {user?.role === 'admin' ? (
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Сменить пароль</h3>
           <form onSubmit={handleChangePassword} className="space-y-4">
@@ -123,6 +124,11 @@ export default function ProfilePage() {
             </button>
           </form>
         </div>
+        ) : (
+        <div className="bg-gray-50 rounded-xl p-5 text-sm text-gray-500">
+          Для смены пароля обратитесь к администратору.
+        </div>
+        )}
       </div>
     </Layout>
   );
