@@ -3,111 +3,73 @@ import getDb from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const sql = await getDb();
+    const db = getDb();
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'all';
 
-    // Build date interval conditions using PostgreSQL syntax
-    const useMonth = period === 'month';
-    const useWeek = period === 'week';
-    const useQuarter = period === 'quarter';
-    const useYear = period === 'year';
-    const hasDateFilter = useMonth || useWeek || useQuarter || useYear;
+    // Build date filter condition
+    let dateCondition = '';
+    if (period === 'week') {
+      dateCondition = `created_at >= date('now', '-7 days')`;
+    } else if (period === 'month') {
+      dateCondition = `created_at >= date('now', '-1 month')`;
+    } else if (period === 'quarter') {
+      dateCondition = `created_at >= date('now', '-3 months')`;
+    } else if (period === 'year') {
+      dateCondition = `created_at >= date('now', '-1 year')`;
+    }
 
     // Sources distribution from clients
-    const sourcesDistribution = await sql`
-      SELECT c.source, COUNT(*)::int as count
-      FROM clients c
-      WHERE (${!hasDateFilter}::boolean OR
-        (${useMonth}::boolean AND c.created_at >= NOW() - INTERVAL '1 month') OR
-        (${useWeek}::boolean AND c.created_at >= NOW() - INTERVAL '7 days') OR
-        (${useQuarter}::boolean AND c.created_at >= NOW() - INTERVAL '3 months') OR
-        (${useYear}::boolean AND c.created_at >= NOW() - INTERVAL '1 year'))
-      GROUP BY c.source
-      ORDER BY count DESC
-    `;
+    const sourcesQuery = dateCondition
+      ? `SELECT c.source, COUNT(*) as count FROM clients c WHERE c.${dateCondition} GROUP BY c.source ORDER BY count DESC`
+      : `SELECT c.source, COUNT(*) as count FROM clients c GROUP BY c.source ORDER BY count DESC`;
+    const sourcesDistribution = db.prepare(sourcesQuery).all();
 
     // Monthly revenue (last 12 months)
-    const monthlyRevenue = await sql`
+    const monthlyRevenue = db.prepare(`
       SELECT
-        to_char(o.created_at, 'YYYY-MM') as month,
+        strftime('%Y-%m', o.created_at) as month,
         SUM(o.amount) as revenue,
-        COUNT(*)::int as orders_count
+        COUNT(*) as orders_count
       FROM orders o
       WHERE o.status != 'cancelled'
-      GROUP BY to_char(o.created_at, 'YYYY-MM')
+      GROUP BY strftime('%Y-%m', o.created_at)
       ORDER BY month DESC
       LIMIT 12
-    `;
+    `).all();
 
     // Conversion rates: leads to clients
-    const totalLeadsRows = await sql`
-      SELECT COUNT(*)::int as count FROM leads l
-      WHERE (${!hasDateFilter}::boolean OR
-        (${useMonth}::boolean AND l.created_at >= NOW() - INTERVAL '1 month') OR
-        (${useWeek}::boolean AND l.created_at >= NOW() - INTERVAL '7 days') OR
-        (${useQuarter}::boolean AND l.created_at >= NOW() - INTERVAL '3 months') OR
-        (${useYear}::boolean AND l.created_at >= NOW() - INTERVAL '1 year'))
-    `;
-    const totalLeads = totalLeadsRows[0] as { count: number };
+    const totalLeadsQuery = dateCondition
+      ? `SELECT COUNT(*) as count FROM leads l WHERE l.${dateCondition}`
+      : `SELECT COUNT(*) as count FROM leads l`;
+    const totalLeads = db.prepare(totalLeadsQuery).get() as { count: number };
 
-    const convertedLeadsRows = await sql`
-      SELECT COUNT(*)::int as count FROM leads l
-      WHERE l.status = 'converted'
-        AND (${!hasDateFilter}::boolean OR
-          (${useMonth}::boolean AND l.created_at >= NOW() - INTERVAL '1 month') OR
-          (${useWeek}::boolean AND l.created_at >= NOW() - INTERVAL '7 days') OR
-          (${useQuarter}::boolean AND l.created_at >= NOW() - INTERVAL '3 months') OR
-          (${useYear}::boolean AND l.created_at >= NOW() - INTERVAL '1 year'))
-    `;
-    const convertedLeads = convertedLeadsRows[0] as { count: number };
+    const convertedLeadsQuery = dateCondition
+      ? `SELECT COUNT(*) as count FROM leads l WHERE l.status = 'converted' AND l.${dateCondition}`
+      : `SELECT COUNT(*) as count FROM leads l WHERE l.status = 'converted'`;
+    const convertedLeads = db.prepare(convertedLeadsQuery).get() as { count: number };
 
     const conversionRate = totalLeads.count > 0
       ? ((convertedLeads.count / totalLeads.count) * 100).toFixed(1)
       : '0';
 
     // Popular products
-    const popularProducts = await sql`
-      SELECT o.product_type, COUNT(*)::int as count, SUM(o.amount) as total_revenue
-      FROM orders o
-      WHERE o.status != 'cancelled'
-        AND (${!hasDateFilter}::boolean OR
-          (${useMonth}::boolean AND o.created_at >= NOW() - INTERVAL '1 month') OR
-          (${useWeek}::boolean AND o.created_at >= NOW() - INTERVAL '7 days') OR
-          (${useQuarter}::boolean AND o.created_at >= NOW() - INTERVAL '3 months') OR
-          (${useYear}::boolean AND o.created_at >= NOW() - INTERVAL '1 year'))
-      GROUP BY o.product_type
-      ORDER BY count DESC
-    `;
+    const popularProductsQuery = dateCondition
+      ? `SELECT o.product_type, COUNT(*) as count, SUM(o.amount) as total_revenue FROM orders o WHERE o.status != 'cancelled' AND o.${dateCondition} GROUP BY o.product_type ORDER BY count DESC`
+      : `SELECT o.product_type, COUNT(*) as count, SUM(o.amount) as total_revenue FROM orders o WHERE o.status != 'cancelled' GROUP BY o.product_type ORDER BY count DESC`;
+    const popularProducts = db.prepare(popularProductsQuery).all();
 
     // Average check
-    const avgCheckRows = await sql`
-      SELECT
-        AVG(o.amount) as avg_check,
-        SUM(o.amount) as total_revenue,
-        COUNT(*)::int as total_orders
-      FROM orders o
-      WHERE o.status != 'cancelled' AND o.amount > 0
-        AND (${!hasDateFilter}::boolean OR
-          (${useMonth}::boolean AND o.created_at >= NOW() - INTERVAL '1 month') OR
-          (${useWeek}::boolean AND o.created_at >= NOW() - INTERVAL '7 days') OR
-          (${useQuarter}::boolean AND o.created_at >= NOW() - INTERVAL '3 months') OR
-          (${useYear}::boolean AND o.created_at >= NOW() - INTERVAL '1 year'))
-    `;
-    const avgCheck = avgCheckRows[0] as { avg_check: number | null; total_revenue: number | null; total_orders: number };
+    const avgCheckQuery = dateCondition
+      ? `SELECT AVG(o.amount) as avg_check, SUM(o.amount) as total_revenue, COUNT(*) as total_orders FROM orders o WHERE o.status != 'cancelled' AND o.amount > 0 AND o.${dateCondition}`
+      : `SELECT AVG(o.amount) as avg_check, SUM(o.amount) as total_revenue, COUNT(*) as total_orders FROM orders o WHERE o.status != 'cancelled' AND o.amount > 0`;
+    const avgCheck = db.prepare(avgCheckQuery).get() as { avg_check: number | null; total_revenue: number | null; total_orders: number };
 
     // Lead sources distribution
-    const leadSources = await sql`
-      SELECT l.source, COUNT(*)::int as count
-      FROM leads l
-      WHERE (${!hasDateFilter}::boolean OR
-        (${useMonth}::boolean AND l.created_at >= NOW() - INTERVAL '1 month') OR
-        (${useWeek}::boolean AND l.created_at >= NOW() - INTERVAL '7 days') OR
-        (${useQuarter}::boolean AND l.created_at >= NOW() - INTERVAL '3 months') OR
-        (${useYear}::boolean AND l.created_at >= NOW() - INTERVAL '1 year'))
-      GROUP BY l.source
-      ORDER BY count DESC
-    `;
+    const leadSourcesQuery = dateCondition
+      ? `SELECT l.source, COUNT(*) as count FROM leads l WHERE l.${dateCondition} GROUP BY l.source ORDER BY count DESC`
+      : `SELECT l.source, COUNT(*) as count FROM leads l GROUP BY l.source ORDER BY count DESC`;
+    const leadSources = db.prepare(leadSourcesQuery).all();
 
     return NextResponse.json({
       sources_distribution: sourcesDistribution,

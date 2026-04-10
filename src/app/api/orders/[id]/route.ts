@@ -6,30 +6,30 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = await getDb();
+    const db = getDb();
     const { id } = await params;
 
-    const rows = await sql`
+    const row = db.prepare(`
       SELECT o.*, c.name as client_name, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE o.id = ${Number(id)}
-    `;
+      WHERE o.id = ?
+    `).get(Number(id)) as Record<string, unknown> | undefined;
 
-    if (rows.length === 0) {
+    if (!row) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const history = await sql`
+    const history = db.prepare(`
       SELECT oh.*, u.name as user_name
       FROM order_history oh
       LEFT JOIN users u ON oh.changed_by = u.id
-      WHERE oh.order_id = ${Number(id)}
+      WHERE oh.order_id = ?
       ORDER BY oh.created_at DESC
-    `;
+    `).all(Number(id));
 
-    return NextResponse.json({ ...(rows[0] as Record<string, unknown>), history });
+    return NextResponse.json({ ...row, history });
   } catch (error) {
     console.error('Error fetching order:', error);
     return NextResponse.json({ error: 'Failed to fetch order' }, { status: 500 });
@@ -41,7 +41,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = await getDb();
+    const db = getDb();
     const { id } = await params;
     const body = await request.json();
     const {
@@ -50,47 +50,58 @@ export async function PUT(
       factory_order_number, comment, changed_by
     } = body;
 
-    const existing = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
-    if (existing.length === 0) {
+    const existing = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id)) as Record<string, unknown> | undefined;
+    if (!existing) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-    const ex = existing[0] as Record<string, unknown>;
 
-    const newStatus = status ?? ex.status;
+    const newStatus = status ?? existing.status;
 
-    await sql`
+    db.prepare(`
       UPDATE orders
-      SET client_id = ${client_id ?? ex.client_id},
-          manager_id = ${manager_id ?? ex.manager_id},
-          product_type = ${product_type ?? ex.product_type},
-          description = ${description ?? ex.description},
-          dimensions = ${dimensions ?? ex.dimensions},
-          quantity = ${quantity ?? ex.quantity},
-          amount = ${amount ?? ex.amount},
-          prepayment = ${prepayment ?? ex.prepayment},
-          status = ${newStatus},
-          factory_order_number = ${factory_order_number ?? ex.factory_order_number},
-          updated_at = NOW()
-      WHERE id = ${Number(id)}
-    `;
+      SET client_id = ?,
+          manager_id = ?,
+          product_type = ?,
+          description = ?,
+          dimensions = ?,
+          quantity = ?,
+          amount = ?,
+          prepayment = ?,
+          status = ?,
+          factory_order_number = ?,
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).run(
+      client_id ?? existing.client_id,
+      manager_id ?? existing.manager_id,
+      product_type ?? existing.product_type,
+      description ?? existing.description,
+      dimensions ?? existing.dimensions,
+      quantity ?? existing.quantity,
+      amount ?? existing.amount,
+      prepayment ?? existing.prepayment,
+      newStatus,
+      factory_order_number ?? existing.factory_order_number,
+      Number(id)
+    );
 
     // Add history entry if status changed
-    if (status && status !== ex.status) {
-      await sql`
+    if (status && status !== existing.status) {
+      db.prepare(`
         INSERT INTO order_history (order_id, status, changed_by, comment)
-        VALUES (${Number(id)}, ${status}, ${changed_by || ex.manager_id}, ${comment || `Статус изменён на "${status}"`})
-      `;
+        VALUES (?, ?, ?, ?)
+      `).run(Number(id), status, changed_by || existing.manager_id, comment || `Статус изменён на "${status}"`);
     }
 
-    const updated = await sql`
+    const updated = db.prepare(`
       SELECT o.*, c.name as client_name, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE o.id = ${Number(id)}
-    `;
+      WHERE o.id = ?
+    `).get(Number(id));
 
-    return NextResponse.json(updated[0]);
+    return NextResponse.json(updated);
   } catch (error) {
     console.error('Error updating order:', error);
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });

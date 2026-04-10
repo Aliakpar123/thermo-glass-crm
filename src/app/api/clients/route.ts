@@ -3,22 +3,37 @@ import getDb from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const sql = await getDb();
+    const db = getDb();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const source = searchParams.get('source') || '';
     const managerId = searchParams.get('manager_id') || '';
 
-    const clients = await sql`
+    let query = `
       SELECT c.*, u.name as manager_name
       FROM clients c
       LEFT JOIN users u ON c.assigned_manager_id = u.id
-      WHERE (${search} = '' OR c.name ILIKE ${'%' + search + '%'} OR c.phone ILIKE ${'%' + search + '%'} OR c.email ILIKE ${'%' + search + '%'} OR c.city ILIKE ${'%' + search + '%'})
-        AND (${source} = '' OR c.source = ${source})
-        AND (${managerId} = '' OR c.assigned_manager_id = ${managerId === '' ? 0 : Number(managerId)})
-      ORDER BY c.created_at DESC
+      WHERE 1=1
     `;
+    const params: unknown[] = [];
 
+    if (search) {
+      query += ` AND (c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR c.city LIKE ?)`;
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+    if (source) {
+      query += ` AND c.source = ?`;
+      params.push(source);
+    }
+    if (managerId) {
+      query += ` AND c.assigned_manager_id = ?`;
+      params.push(Number(managerId));
+    }
+
+    query += ` ORDER BY c.created_at DESC`;
+
+    const clients = db.prepare(query).all(...params);
     return NextResponse.json(clients);
   } catch (error) {
     console.error('Error fetching clients:', error);
@@ -28,7 +43,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const sql = await getDb();
+    const db = getDb();
     const body = await request.json();
     const { name, phone, email, city, address, source, notes, assigned_manager_id } = body;
 
@@ -36,13 +51,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
     }
 
-    const result = await sql`
+    const result = db.prepare(`
       INSERT INTO clients (name, phone, email, city, address, source, notes, assigned_manager_id)
-      VALUES (${name}, ${phone}, ${email || ''}, ${city || ''}, ${address || ''}, ${source || 'other'}, ${notes || ''}, ${assigned_manager_id || null})
-      RETURNING *
-    `;
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(name, phone, email || '', city || '', address || '', source || 'other', notes || '', assigned_manager_id || null);
 
-    return NextResponse.json(result[0], { status: 201 });
+    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
+    return NextResponse.json(client, { status: 201 });
   } catch (error) {
     console.error('Error creating client:', error);
     return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
