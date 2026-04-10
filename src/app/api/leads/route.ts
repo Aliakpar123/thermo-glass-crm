@@ -3,42 +3,24 @@ import getDb from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const source = searchParams.get('source') || '';
     const assignedTo = searchParams.get('assigned_to') || '';
     const search = searchParams.get('search') || '';
 
-    let query = `
+    const leads = await sql`
       SELECT l.*, u.name as assigned_name
       FROM leads l
       LEFT JOIN users u ON l.assigned_to = u.id
-      WHERE 1=1
+      WHERE (${status} = '' OR l.status = ${status})
+        AND (${source} = '' OR l.source = ${source})
+        AND (${assignedTo} = '' OR l.assigned_to = ${assignedTo === '' ? 0 : Number(assignedTo)})
+        AND (${search} = '' OR l.name ILIKE ${'%' + search + '%'} OR l.phone ILIKE ${'%' + search + '%'} OR l.message ILIKE ${'%' + search + '%'})
+      ORDER BY l.created_at DESC
     `;
-    const params: unknown[] = [];
 
-    if (status) {
-      query += ` AND l.status = ?`;
-      params.push(status);
-    }
-    if (source) {
-      query += ` AND l.source = ?`;
-      params.push(source);
-    }
-    if (assignedTo) {
-      query += ` AND l.assigned_to = ?`;
-      params.push(Number(assignedTo));
-    }
-    if (search) {
-      query += ` AND (l.name LIKE ? OR l.phone LIKE ? OR l.message LIKE ?)`;
-      const s = `%${search}%`;
-      params.push(s, s, s);
-    }
-
-    query += ` ORDER BY l.created_at DESC`;
-
-    const leads = db.prepare(query).all(...params);
     return NextResponse.json(leads);
   } catch (error) {
     console.error('Error fetching leads:', error);
@@ -48,7 +30,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const body = await request.json();
     const { name, phone, source, message, status, assigned_to, client_id } = body;
 
@@ -56,13 +38,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await sql`
       INSERT INTO leads (name, phone, source, message, status, assigned_to, client_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(name, phone, source || 'other', message || '', status || 'new', assigned_to || null, client_id || null);
+      VALUES (${name}, ${phone}, ${source || 'other'}, ${message || ''}, ${status || 'new'}, ${assigned_to || null}, ${client_id || null})
+      RETURNING *
+    `;
 
-    const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(result.lastInsertRowid);
-    return NextResponse.json(lead, { status: 201 });
+    return NextResponse.json(result[0], { status: 201 });
   } catch (error) {
     console.error('Error creating lead:', error);
     return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });

@@ -6,21 +6,21 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const { id } = await params;
 
-    const row = db.prepare(`
+    const rows = await sql`
       SELECT l.*, u.name as assigned_name
       FROM leads l
       LEFT JOIN users u ON l.assigned_to = u.id
-      WHERE l.id = ?
-    `).get(Number(id));
+      WHERE l.id = ${Number(id)}
+    `;
 
-    if (!row) {
+    if (!rows[0]) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    return NextResponse.json(row);
+    return NextResponse.json(rows[0]);
   } catch (error) {
     console.error('Error fetching lead:', error);
     return NextResponse.json({ error: 'Failed to fetch lead' }, { status: 500 });
@@ -32,38 +32,31 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const { id } = await params;
     const body = await request.json();
     const { name, phone, source, message, status, assigned_to } = body;
 
-    const existing = db.prepare('SELECT * FROM leads WHERE id = ?').get(Number(id)) as Record<string, unknown> | undefined;
+    const existingRows = await sql`SELECT * FROM leads WHERE id = ${Number(id)}`;
+    const existing = existingRows[0] as Record<string, unknown> | undefined;
     if (!existing) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    db.prepare(`
+    await sql`
       UPDATE leads
-      SET name = ?,
-          phone = ?,
-          source = ?,
-          message = ?,
-          status = ?,
-          assigned_to = ?,
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
-      name ?? existing.name,
-      phone ?? existing.phone,
-      source ?? existing.source,
-      message ?? existing.message,
-      status ?? existing.status,
-      assigned_to !== undefined ? assigned_to : existing.assigned_to,
-      Number(id)
-    );
+      SET name = ${name ?? existing.name},
+          phone = ${phone ?? existing.phone},
+          source = ${source ?? existing.source},
+          message = ${message ?? existing.message},
+          status = ${status ?? existing.status},
+          assigned_to = ${assigned_to !== undefined ? assigned_to : existing.assigned_to},
+          updated_at = NOW()
+      WHERE id = ${Number(id)}
+    `;
 
-    const updated = db.prepare('SELECT * FROM leads WHERE id = ?').get(Number(id));
-    return NextResponse.json(updated);
+    const updated = await sql`SELECT * FROM leads WHERE id = ${Number(id)}`;
+    return NextResponse.json(updated[0]);
   } catch (error) {
     console.error('Error updating lead:', error);
     return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
@@ -75,7 +68,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const { id } = await params;
     const body = await request.json();
 
@@ -83,7 +76,8 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid action. Use action=convert' }, { status: 400 });
     }
 
-    const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(Number(id)) as Record<string, unknown> | undefined;
+    const leadRows = await sql`SELECT * FROM leads WHERE id = ${Number(id)}`;
+    const lead = leadRows[0] as Record<string, unknown> | undefined;
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
@@ -93,15 +87,16 @@ export async function POST(
     }
 
     // Create client from lead data
-    const clientResult = db.prepare(`
+    const clientResult = await sql`
       INSERT INTO clients (name, phone, source, notes, assigned_manager_id)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(lead.name, lead.phone, lead.source, lead.message || '', lead.assigned_to || body.assigned_manager_id || null);
+      VALUES (${lead.name}, ${lead.phone}, ${lead.source}, ${lead.message || ''}, ${lead.assigned_to || body.assigned_manager_id || null})
+      RETURNING *
+    `;
 
-    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(clientResult.lastInsertRowid);
+    const client = clientResult[0];
 
     // Mark lead as converted
-    db.prepare("UPDATE leads SET status = 'converted', updated_at = datetime('now') WHERE id = ?").run(Number(id));
+    await sql`UPDATE leads SET status = 'converted', updated_at = NOW() WHERE id = ${Number(id)}`;
 
     return NextResponse.json({
       message: 'Lead converted to client',

@@ -4,55 +4,78 @@ import getDb from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'all';
 
-    // Build date filter condition
-    let dateCondition = '';
-    if (period === 'month') {
-      dateCondition = `created_at >= date('now', '-1 month')`;
-    } else if (period === 'week') {
-      dateCondition = `created_at >= date('now', '-7 days')`;
-    }
+    // Determine interval for date filtering
+    let intervalStr: string | null = null;
+    if (period === 'month') intervalStr = '1 month';
+    else if (period === 'week') intervalStr = '7 days';
 
-    // Get all managers (client_manager and admin roles)
-    const managers = db.prepare(`
+    const hasDateFilter = intervalStr !== null;
+
+    // Get all managers
+    const managers = await sql`
       SELECT id, name, email, role FROM users
       WHERE role IN ('client_manager', 'admin', 'order_manager')
       ORDER BY name
-    `).all() as Array<Record<string, unknown>>;
+    `;
 
-    const staffKpi = managers.map((manager) => {
-      // Leads count
-      const leadsCountQuery = dateCondition
-        ? `SELECT COUNT(*) as count FROM leads l WHERE l.assigned_to = ? AND l.${dateCondition}`
-        : `SELECT COUNT(*) as count FROM leads l WHERE l.assigned_to = ?`;
-      const leadsCount = db.prepare(leadsCountQuery).get(manager.id) as { count: number };
+    const staffKpi = await Promise.all((managers as Array<Record<string, unknown>>).map(async (manager) => {
+      let leadsCountRow;
+      let ordersCountRow;
+      let ordersSentRow;
+      let ordersCompletedRow;
+      let revenueRow;
 
-      // Orders count
-      const ordersCountQuery = dateCondition
-        ? `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ? AND o.${dateCondition}`
-        : `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ?`;
-      const ordersCount = db.prepare(ordersCountQuery).get(manager.id) as { count: number };
+      if (hasDateFilter) {
+        leadsCountRow = await sql`
+          SELECT COUNT(*)::int as count FROM leads l
+          WHERE l.assigned_to = ${manager.id} AND l.created_at >= NOW() - ${intervalStr}::interval
+        `;
+        ordersCountRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o
+          WHERE o.manager_id = ${manager.id} AND o.created_at >= NOW() - ${intervalStr}::interval
+        `;
+        ordersSentRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o
+          WHERE o.manager_id = ${manager.id} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed') AND o.created_at >= NOW() - ${intervalStr}::interval
+        `;
+        ordersCompletedRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o
+          WHERE o.manager_id = ${manager.id} AND o.status = 'completed' AND o.created_at >= NOW() - ${intervalStr}::interval
+        `;
+        revenueRow = await sql`
+          SELECT COALESCE(SUM(o.amount), 0)::numeric as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END)::numeric as avg_check
+          FROM orders o WHERE o.manager_id = ${manager.id} AND o.status != 'cancelled' AND o.created_at >= NOW() - ${intervalStr}::interval
+        `;
+      } else {
+        leadsCountRow = await sql`
+          SELECT COUNT(*)::int as count FROM leads l WHERE l.assigned_to = ${manager.id}
+        `;
+        ordersCountRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o WHERE o.manager_id = ${manager.id}
+        `;
+        ordersSentRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o
+          WHERE o.manager_id = ${manager.id} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed')
+        `;
+        ordersCompletedRow = await sql`
+          SELECT COUNT(*)::int as count FROM orders o
+          WHERE o.manager_id = ${manager.id} AND o.status = 'completed'
+        `;
+        revenueRow = await sql`
+          SELECT COALESCE(SUM(o.amount), 0)::numeric as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END)::numeric as avg_check
+          FROM orders o WHERE o.manager_id = ${manager.id} AND o.status != 'cancelled'
+        `;
+      }
 
-      // Orders sent to factory
-      const ordersSentQuery = dateCondition
-        ? `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ? AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed') AND o.${dateCondition}`
-        : `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ? AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed')`;
-      const ordersSentToFactory = db.prepare(ordersSentQuery).get(manager.id) as { count: number };
-
-      // Orders completed
-      const ordersCompletedQuery = dateCondition
-        ? `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ? AND o.status = 'completed' AND o.${dateCondition}`
-        : `SELECT COUNT(*) as count FROM orders o WHERE o.manager_id = ? AND o.status = 'completed'`;
-      const ordersCompleted = db.prepare(ordersCompletedQuery).get(manager.id) as { count: number };
-
-      // Total revenue & avg check
-      const revenueQuery = dateCondition
-        ? `SELECT COALESCE(SUM(o.amount), 0) as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END) as avg_check FROM orders o WHERE o.manager_id = ? AND o.status != 'cancelled' AND o.${dateCondition}`
-        : `SELECT COALESCE(SUM(o.amount), 0) as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END) as avg_check FROM orders o WHERE o.manager_id = ? AND o.status != 'cancelled'`;
-      const revenueData = db.prepare(revenueQuery).get(manager.id) as { total_revenue: number; avg_check: number | null };
+      const leadsCount = leadsCountRow[0] as { count: number };
+      const ordersCount = ordersCountRow[0] as { count: number };
+      const ordersSentToFactory = ordersSentRow[0] as { count: number };
+      const ordersCompleted = ordersCompletedRow[0] as { count: number };
+      const revenueData = revenueRow[0] as { total_revenue: number; avg_check: number | null };
 
       return {
         id: manager.id,
@@ -66,7 +89,7 @@ export async function GET(request: NextRequest) {
         total_revenue: revenueData.total_revenue,
         avg_check: revenueData.avg_check ? Math.round(Number(revenueData.avg_check)) : 0,
       };
-    });
+    }));
 
     return NextResponse.json(staffKpi);
   } catch (error) {
@@ -77,7 +100,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const db = getDb();
+    const sql = await getDb();
     const body = await request.json();
     const { id, name, email, role, password } = body;
 
@@ -85,30 +108,28 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-    if (!userRow) {
+    const userRows = await sql`SELECT * FROM users WHERE id = ${id}`;
+    if (!userRows[0]) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Update name, email, role
     if (name || email || role) {
-      db.prepare(`
+      await sql`
         UPDATE users SET
-          name = COALESCE(?, name),
-          email = COALESCE(?, email),
-          role = COALESCE(?, role)
-        WHERE id = ?
-      `).run(name || null, email || null, role || null, id);
+          name = COALESCE(${name || null}, name),
+          email = COALESCE(${email || null}, email),
+          role = COALESCE(${role || null}, role)
+        WHERE id = ${id}
+      `;
     }
 
-    // Update password if provided
     if (password && password.trim().length >= 4) {
       const hash = bcrypt.hashSync(password, 10);
-      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, id);
+      await sql`UPDATE users SET password_hash = ${hash} WHERE id = ${id}`;
     }
 
-    const updated = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(id);
-    return NextResponse.json(updated);
+    const updated = await sql`SELECT id, name, email, role FROM users WHERE id = ${id}`;
+    return NextResponse.json(updated[0]);
   } catch (error) {
     console.error('Error updating staff:', error);
     return NextResponse.json({ error: 'Failed to update staff' }, { status: 500 });
