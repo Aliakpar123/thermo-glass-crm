@@ -6,11 +6,10 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin', 'order_manager', 'client_manager'] },
-  { href: '/clients', label: 'Клиенты', icon: '👥', roles: ['admin', 'client_manager'] },
-  { href: '/leads', label: 'Заявки', icon: '📥', roles: ['admin', 'order_manager'] },
-  { href: '/orders', label: 'Заказы', icon: '📋', roles: ['admin', 'order_manager'] },
-  { href: '/marketing', label: 'Маркетинг', icon: '📈', roles: ['admin'] },
+  { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager'] },
+  { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager'] },
+  { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
+  { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
 ];
 
@@ -20,10 +19,8 @@ export default function Sidebar() {
   const userRole = (session?.user as { role?: string })?.role || '';
   const [newLeadsCount, setNewLeadsCount] = useState(0);
 
-  const canSeeLeads = userRole === 'admin' || userRole === 'order_manager';
-
   useEffect(() => {
-    if (!canSeeLeads) return;
+    if (!userRole) return;
 
     const fetchCount = () => {
       fetch('/api/leads?status=new')
@@ -37,7 +34,7 @@ export default function Sidebar() {
     fetchCount();
     const interval = setInterval(fetchCount, 30000);
     return () => clearInterval(interval);
-  }, [canSeeLeads]);
+  }, [userRole]);
 
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
@@ -63,7 +60,7 @@ export default function Sidebar() {
             >
               <span className="text-lg">{item.icon}</span>
               {item.label}
-              {item.href === '/leads' && canSeeLeads && newLeadsCount > 0 && (
+              {item.href === '/deals' && newLeadsCount > 0 && (
                 <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {newLeadsCount}
                 </span>

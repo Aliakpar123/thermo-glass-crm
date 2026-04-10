@@ -10,7 +10,7 @@ export async function GET(
     const { id } = await params;
 
     const rows = await sql`
-      SELECT o.*, c.name as client_name, u.name as manager_name
+      SELECT o.*, c.name as client_name, c.phone as client_phone, c.city as client_city, c.source as client_source, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
@@ -84,7 +84,7 @@ export async function PUT(
     }
 
     const updated = await sql`
-      SELECT o.*, c.name as client_name, u.name as manager_name
+      SELECT o.*, c.name as client_name, c.phone as client_phone, c.city as client_city, c.source as client_source, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
