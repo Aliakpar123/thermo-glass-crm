@@ -563,7 +563,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                       <div className="text-center py-12">
                         <p className="text-gray-400 text-sm mb-4">Заявка на расчёт ещё не заполнена</p>
                         <Link
-                          href={`/orders/calculation?order_id=${order.id}&client_id=${order.client_id}&client_name=${encodeURIComponent(order.client_name || '')}&client_phone=${encodeURIComponent((order as Record<string, unknown>).client_phone as string || '')}`}
+                          href={`/orders/calculation?order_id=${order.id}&client_id=${order.client_id}&client_name=${encodeURIComponent(order.client_name || '')}&client_phone=${encodeURIComponent((order as unknown as Record<string, unknown>).client_phone as string || '')}`}
                           className="inline-flex items-center px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
                         >
                           Заполнить заявку на расчёт
