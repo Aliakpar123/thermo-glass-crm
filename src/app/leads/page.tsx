@@ -101,7 +101,7 @@ export default function LeadsPage() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 statusFilter === tab.key
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                  : 'bg-white text-gray-900 border border-gray-300 hover:bg-gray-50'
               }`}
             >
               {tab.label}

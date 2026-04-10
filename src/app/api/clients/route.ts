@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     const managerId = searchParams.get('manager_id') || '';
 
     const clients = await sql`
-      SELECT c.*, u.name as manager_name
+      SELECT c.*, u.name as manager_name,
+        CASE WHEN EXISTS(SELECT 1 FROM leads WHERE client_id = c.id) THEN 'transferred' ELSE 'active' END as status
       FROM clients c
       LEFT JOIN users u ON c.assigned_manager_id = u.id
       WHERE (${search} = '' OR c.name ILIKE ${'%' + search + '%'} OR c.phone ILIKE ${'%' + search + '%'} OR c.email ILIKE ${'%' + search + '%'} OR c.city ILIKE ${'%' + search + '%'})

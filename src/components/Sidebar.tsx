@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -17,6 +18,26 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role || '';
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
+
+  const canSeeLeads = userRole === 'admin' || userRole === 'order_manager';
+
+  useEffect(() => {
+    if (!canSeeLeads) return;
+
+    const fetchCount = () => {
+      fetch('/api/leads?status=new')
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setNewLeadsCount(data.length);
+        })
+        .catch(() => {});
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [canSeeLeads]);
 
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
@@ -42,6 +63,11 @@ export default function Sidebar() {
             >
               <span className="text-lg">{item.icon}</span>
               {item.label}
+              {item.href === '/leads' && canSeeLeads && newLeadsCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {newLeadsCount}
+                </span>
+              )}
             </Link>
           );
         })}

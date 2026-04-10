@@ -34,12 +34,20 @@ export default function OrdersPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Заказы</h1>
-          <Link
-            href="/orders/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-          >
-            Новый заказ
-          </Link>
+          <div className="flex gap-2">
+            <a
+              href="/api/export/orders"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+            >
+              Скачать Excel
+            </a>
+            <Link
+              href="/orders/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            >
+              Новый заказ
+            </Link>
+          </div>
         </div>
 
         {/* Status filter */}

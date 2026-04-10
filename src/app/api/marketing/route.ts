@@ -113,6 +113,12 @@ export async function GET(request: NextRequest) {
       `;
     }
 
+    // Funnel counts
+    const leadsCountRow = await sql`SELECT COUNT(*)::int as count FROM leads`;
+    const clientsCountRow = await sql`SELECT COUNT(*)::int as count FROM clients`;
+    const ordersCountRow = await sql`SELECT COUNT(*)::int as count FROM orders WHERE status != 'cancelled'`;
+    const completedCountRow = await sql`SELECT COUNT(*)::int as count FROM orders WHERE status = 'completed'`;
+
     return NextResponse.json({
       sources_distribution: sourcesDistribution,
       monthly_revenue: monthlyRevenue,
@@ -126,6 +132,12 @@ export async function GET(request: NextRequest) {
       total_revenue: avgCheck.total_revenue || 0,
       total_orders: avgCheck.total_orders,
       lead_sources: leadSources,
+      funnel: {
+        leads: (leadsCountRow[0] as { count: number }).count,
+        clients: (clientsCountRow[0] as { count: number }).count,
+        orders: (ordersCountRow[0] as { count: number }).count,
+        completed: (completedCountRow[0] as { count: number }).count,
+      },
     });
   } catch (error) {
     console.error('Error fetching marketing data:', error);

@@ -35,6 +35,11 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-3">
+            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white text-2xl font-bold tracking-tight">TG</span>
+            </div>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Thermo Glass KZ</h1>
           <p className="text-gray-500 mt-2">CRM система</p>
         </div>

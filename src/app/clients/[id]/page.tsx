@@ -6,10 +6,21 @@ import Link from 'next/link';
 import Layout from '@/components/Layout';
 import StatusBadge from '@/components/StatusBadge';
 import { Client, Order, LeadSource, LEAD_SOURCE_LABELS, PRODUCT_TYPE_LABELS } from '@/types';
+import { useSession } from 'next-auth/react';
+
+interface Comment {
+  id: number;
+  client_id: number;
+  user_id: number | null;
+  user_name: string;
+  text: string;
+  created_at: string;
+}
 
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const id = params.id;
 
   const [client, setClient] = useState<Client | null>(null);
@@ -17,6 +28,9 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [addingComment, setAddingComment] = useState(false);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -26,6 +40,13 @@ export default function ClientDetailPage() {
     source: 'phone' as LeadSource,
     notes: '',
   });
+
+  const fetchComments = () => {
+    fetch(`/api/clients/${id}/comments`)
+      .then((r) => r.json())
+      .then(setComments)
+      .catch(() => {});
+  };
 
   useEffect(() => {
     Promise.all([
@@ -46,7 +67,30 @@ export default function ClientDetailPage() {
         });
       })
       .finally(() => setLoading(false));
+    fetchComments();
   }, [id]);
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+    setAddingComment(true);
+    try {
+      const userName = (session?.user as { name?: string })?.name || '';
+      const userId = (session?.user as { id?: string })?.id || null;
+      await fetch(`/api/clients/${id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId ? Number(userId) : null,
+          user_name: userName,
+          text: commentText.trim(),
+        }),
+      });
+      setCommentText('');
+      fetchComments();
+    } finally {
+      setAddingComment(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,6 +324,44 @@ export default function ClientDetailPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+        {/* Client Comments / Notes */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Заметки</h2>
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(); }}
+              placeholder="Добавить заметку..."
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <button
+              onClick={handleAddComment}
+              disabled={addingComment || !commentText.trim()}
+              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium whitespace-nowrap"
+            >
+              {addingComment ? 'Добавление...' : 'Добавить заметку'}
+            </button>
+          </div>
+          {comments.length === 0 ? (
+            <p className="text-gray-500 text-sm">Нет заметок</p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((c) => (
+                <div key={c.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-900">{c.user_name || 'Система'}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(c.created_at).toLocaleString('ru-RU')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">{c.text}</p>
+                </div>
+              ))}
             </div>
           )}
         </div>

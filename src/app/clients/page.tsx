@@ -11,9 +11,11 @@ export default function ClientsPage() {
   const userRole = (session?.user as { role?: string })?.role || '';
   const isClientManager = userRole === 'client_manager';
 
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<(Client & { status?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'transferred'>('all');
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
@@ -43,9 +45,14 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
+  const uniqueCities = Array.from(new Set(clients.map((c) => c.city).filter(Boolean))).sort();
+
   const filtered = clients.filter((c) => {
     const q = search.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+    const matchesSearch = c.name.toLowerCase().includes(q) || c.phone.includes(q);
+    const matchesCity = !cityFilter || c.city === cityFilter;
+    const matchesStatus = statusFilter === 'all' || (c.status || 'active') === statusFilter;
+    return matchesSearch && matchesCity && matchesStatus;
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,6 +91,7 @@ export default function ClientsPage() {
       });
       if (res.ok) {
         setSuccessId(client.id);
+        fetchClients();
         setTimeout(() => setSuccessId(null), 3000);
       }
     } finally {
@@ -96,12 +104,20 @@ export default function ClientsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Клиенты</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-          >
-            + Новый клиент
-          </button>
+          <div className="flex gap-2">
+            <a
+              href="/api/export/clients"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+            >
+              Скачать Excel
+            </a>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            >
+              + Новый клиент
+            </button>
+          </div>
         </div>
 
         {isClientManager && (
@@ -111,13 +127,34 @@ export default function ClientsPage() {
         )}
 
         <div className="bg-white rounded-xl shadow-sm p-5">
-          <input
-            type="text"
-            placeholder="Поиск по имени или телефону..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-80 border border-gray-300 rounded-lg px-4 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          />
+          <div className="flex flex-wrap gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Поиск по имени или телефону..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full sm:w-80 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            >
+              <option value="">Все города</option>
+              {uniqueCities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'transferred')}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            >
+              <option value="all">Все</option>
+              <option value="active">Активные</option>
+              <option value="transferred">Переданные</option>
+            </select>
+          </div>
 
           {loading ? (
             <div className="text-gray-500">Загрузка...</div>
@@ -141,6 +178,11 @@ export default function ClientsPage() {
                         <Link href={`/clients/${client.id}`} className="text-blue-600 hover:underline font-medium">
                           {client.name}
                         </Link>
+                        {client.status === 'transferred' && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Передан
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-gray-900">{client.phone}</td>
                       <td className="py-3 text-gray-900">{client.city || '\u2014'}</td>

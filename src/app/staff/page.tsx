@@ -1,8 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Layout from '@/components/Layout';
 import { ROLE_LABELS, UserRole } from '@/types';
+
+const BarChart = dynamic(() => import('recharts').then((mod) => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then((mod) => mod.Bar), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then((mod) => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then((mod) => mod.YAxis), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then((mod) => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then((mod) => mod.ResponsiveContainer), { ssr: false });
 
 interface StaffStats {
   id: number;
@@ -166,6 +174,40 @@ export default function StaffPage() {
           <p className="text-sm text-gray-500">
             * Строка с зеленым фоном -- лучший сотрудник по выручке за выбранный период.
           </p>
+        )}
+
+        {/* KPI Charts */}
+        {staff.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Количество заказов</h2>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={staff.map((s) => ({ name: s.name, orders_count: s.orders_count }))}>
+                    <XAxis dataKey="name" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Tooltip formatter={(value: any) => [`${value}`, 'Заказов']} />
+                    <Bar dataKey="orders_count" name="Заказы" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Выручка</h2>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={staff.map((s) => ({ name: s.name, total_revenue: s.total_revenue }))}>
+                    <XAxis dataKey="name" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Tooltip formatter={(value: any) => [`${Number(value).toLocaleString('ru-RU')} \u20B8`, 'Выручка']} />
+                    <Bar dataKey="total_revenue" name="Выручка" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

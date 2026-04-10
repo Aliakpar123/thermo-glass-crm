@@ -31,6 +31,12 @@ interface MarketingData {
   total_revenue: number;
   total_orders: number;
   lead_sources: { source: string; count: number }[];
+  funnel?: {
+    leads: number;
+    clients: number;
+    orders: number;
+    completed: number;
+  };
 }
 
 const COLORS = ['#2563eb', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -130,6 +136,43 @@ export default function MarketingPage() {
                 )}
               </div>
             </div>
+
+            {/* Marketing Funnel */}
+            {data.funnel && (
+              <div className="bg-white rounded-xl shadow-sm p-5">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Воронка продаж</h2>
+                {(() => {
+                  const funnel = data.funnel;
+                  const maxCount = Math.max(funnel.leads, funnel.clients, funnel.orders, funnel.completed, 1);
+                  const stages = [
+                    { label: 'Заявки', count: funnel.leads, color: '#3b82f6' },
+                    { label: 'Клиенты', count: funnel.clients, color: '#f59e0b' },
+                    { label: 'Расчёты', count: funnel.orders, color: '#8b5cf6' },
+                    { label: 'Завершено', count: funnel.completed, color: '#10b981' },
+                  ];
+                  return (
+                    <div className="space-y-3">
+                      {stages.map((stage) => (
+                        <div key={stage.label} className="flex items-center gap-3">
+                          <span className="text-sm text-gray-600 w-24 text-right">{stage.label}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden">
+                            <div
+                              className="h-full rounded-full flex items-center px-3 transition-all duration-500"
+                              style={{
+                                width: `${Math.max((stage.count / maxCount) * 100, 8)}%`,
+                                backgroundColor: stage.color,
+                              }}
+                            >
+                              <span className="text-white text-xs font-bold">{stage.count}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pie chart: lead sources */}

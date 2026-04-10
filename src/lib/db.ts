@@ -92,6 +92,28 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        user_name TEXT DEFAULT '',
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id INTEGER,
+        details TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS client_comments (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL,
+        user_id INTEGER,
+        user_name TEXT DEFAULT '',
+        text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
 
     // Seed users if empty
     const result = await sql`SELECT COUNT(*) as count FROM users`;
