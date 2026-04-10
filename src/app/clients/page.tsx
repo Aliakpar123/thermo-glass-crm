@@ -28,8 +28,12 @@ export default function ClientsPage() {
     notes: '',
   });
 
+  const userId = (session?.user as { id?: string })?.id || '';
+
   const fetchClients = () => {
-    fetch('/api/clients')
+    // client_manager видит только своих клиентов, admin видит всех
+    const url = isClientManager && userId ? `/api/clients?manager_id=${userId}` : '/api/clients';
+    fetch(url)
       .then((r) => r.json())
       .then(setClients)
       .finally(() => setLoading(false));
@@ -51,7 +55,7 @@ export default function ClientsPage() {
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, assigned_manager_id: userId ? Number(userId) : null }),
       });
       if (res.ok) {
         setShowModal(false);
