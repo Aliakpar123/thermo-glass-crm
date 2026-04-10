@@ -50,6 +50,19 @@ export default function OrdersPage() {
           </div>
         </div>
 
+        {/* View toggle */}
+        <div className="flex gap-1 bg-gray-200 rounded-lg p-1 w-fit">
+          <span className="px-4 py-1.5 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm">
+            Таблица
+          </span>
+          <Link
+            href="/orders/kanban"
+            className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-900 hover:bg-white transition"
+          >
+            Канбан
+          </Link>
+        </div>
+
         {/* Status filter */}
         <div className="flex gap-2 flex-wrap">
           {statusTabs.map((tab) => (

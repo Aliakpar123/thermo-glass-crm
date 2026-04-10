@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { Lead, LeadSource, LeadStatus, LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS } from '@/types';
+import { Lead, LeadSource, LeadStatus, LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS, LOSS_REASON_LABELS } from '@/types';
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -18,6 +18,9 @@ export default function LeadsPage() {
     source: 'phone' as LeadSource,
     message: '',
   });
+  const [lossModalLeadId, setLossModalLeadId] = useState<number | null>(null);
+  const [lossReason, setLossReason] = useState('');
+  const [lossReasonOther, setLossReasonOther] = useState('');
 
   const fetchLeads = () => {
     fetch('/api/leads')
@@ -59,6 +62,22 @@ export default function LeadsPage() {
       body: JSON.stringify({ status: 'contacted' }),
     });
     if (res.ok) fetchLeads();
+  };
+
+  const handleMarkLost = async () => {
+    if (!lossModalLeadId || !lossReason) return;
+    const reason = lossReason === 'other' ? (lossReasonOther || 'Другое') : lossReason;
+    const res = await fetch(`/api/leads/${lossModalLeadId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'lost', loss_reason: reason }),
+    });
+    if (res.ok) {
+      setLossModalLeadId(null);
+      setLossReason('');
+      setLossReasonOther('');
+      fetchLeads();
+    }
   };
 
   const handleCalculation = (lead: Lead & { client_id?: number }) => {
@@ -167,12 +186,20 @@ export default function LeadsPage() {
                             </button>
                           )}
                           {(lead.status === 'new' || lead.status === 'contacted') && (
-                            <button
-                              onClick={() => handleCalculation(lead as Lead & { client_id?: number })}
-                              className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
-                            >
-                              Оформить заявку
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleCalculation(lead as Lead & { client_id?: number })}
+                                className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                              >
+                                Оформить заявку
+                              </button>
+                              <button
+                                onClick={() => { setLossModalLeadId(lead.id); setLossReason(''); setLossReasonOther(''); }}
+                                className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                              >
+                                Потерян
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -191,6 +218,63 @@ export default function LeadsPage() {
           )}
         </div>
       </div>
+
+      {/* Loss Reason Modal */}
+      {lossModalLeadId !== null && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Причина потери</h2>
+                <button onClick={() => setLossModalLeadId(null)} className="text-gray-400 hover:text-gray-600 text-xl">
+                  &times;
+                </button>
+              </div>
+              <div className="space-y-3">
+                {Object.entries(LOSS_REASON_LABELS).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loss_reason"
+                      value={key}
+                      checked={lossReason === key}
+                      onChange={() => setLossReason(key)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-900">{label}</span>
+                  </label>
+                ))}
+                {lossReason === 'other' && (
+                  <input
+                    type="text"
+                    value={lossReasonOther}
+                    onChange={(e) => setLossReasonOther(e.target.value)}
+                    placeholder="Укажите причину..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+                  />
+                )}
+              </div>
+              <div className="flex justify-end gap-3 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setLossModalLeadId(null)}
+                  className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={!lossReason}
+                  onClick={handleMarkLost}
+                  className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  Отметить как потерян
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Lead Modal */}
       {showModal && (

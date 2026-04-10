@@ -113,6 +113,27 @@ export async function GET(request: NextRequest) {
       `;
     }
 
+    // Loss reasons from leads and orders
+    const lossReasonsLeads = await sql`
+      SELECT loss_reason as reason, COUNT(*)::int as count
+      FROM leads WHERE status = 'lost' AND loss_reason != '' AND loss_reason IS NOT NULL
+      GROUP BY loss_reason ORDER BY count DESC
+    `;
+    const lossReasonsOrders = await sql`
+      SELECT loss_reason as reason, COUNT(*)::int as count
+      FROM orders WHERE status = 'cancelled' AND loss_reason != '' AND loss_reason IS NOT NULL
+      GROUP BY loss_reason ORDER BY count DESC
+    `;
+    // Merge loss reasons from leads and orders
+    const lossMap = new Map<string, number>();
+    for (const r of [...lossReasonsLeads, ...lossReasonsOrders]) {
+      const row = r as { reason: string; count: number };
+      lossMap.set(row.reason, (lossMap.get(row.reason) || 0) + row.count);
+    }
+    const lossReasons = Array.from(lossMap.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+
     // Funnel counts
     const leadsCountRow = await sql`SELECT COUNT(*)::int as count FROM leads`;
     const clientsCountRow = await sql`SELECT COUNT(*)::int as count FROM clients`;
@@ -132,6 +153,7 @@ export async function GET(request: NextRequest) {
       total_revenue: avgCheck.total_revenue || 0,
       total_orders: avgCheck.total_orders,
       lead_sources: leadSources,
+      loss_reasons: lossReasons,
       funnel: {
         leads: (leadsCountRow[0] as { count: number }).count,
         clients: (clientsCountRow[0] as { count: number }).count,

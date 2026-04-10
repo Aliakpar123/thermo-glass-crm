@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Layout from '@/components/Layout';
-import { LEAD_SOURCE_LABELS, PRODUCT_TYPE_LABELS } from '@/types';
+import { LEAD_SOURCE_LABELS, PRODUCT_TYPE_LABELS, LOSS_REASON_LABELS } from '@/types';
 
 const PieChart = dynamic(() => import('recharts').then((mod) => mod.PieChart), { ssr: false });
 const Pie = dynamic(() => import('recharts').then((mod) => mod.Pie), { ssr: false });
@@ -31,6 +31,7 @@ interface MarketingData {
   total_revenue: number;
   total_orders: number;
   lead_sources: { source: string; count: number }[];
+  loss_reasons?: { reason: string; count: number }[];
   funnel?: {
     leads: number;
     clients: number;
@@ -233,6 +234,34 @@ export default function MarketingPage() {
                 )}
               </div>
             </div>
+
+            {/* Loss Reasons */}
+            {data.loss_reasons && data.loss_reasons.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-5">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Причины потерь</h2>
+                <div className="space-y-3">
+                  {(() => {
+                    const maxCount = Math.max(...data.loss_reasons!.map((r) => r.count), 1);
+                    return data.loss_reasons!.map((r) => {
+                      const label = LOSS_REASON_LABELS[r.reason] || r.reason;
+                      return (
+                        <div key={r.reason} className="flex items-center gap-3">
+                          <span className="text-sm text-gray-900 w-40 text-right shrink-0">{label}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-7 overflow-hidden">
+                            <div
+                              className="h-full rounded-full flex items-center px-3 transition-all duration-500 bg-red-500"
+                              style={{ width: `${Math.max((r.count / maxCount) * 100, 8)}%` }}
+                            >
+                              <span className="text-white text-xs font-bold">{r.count}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
 
             {/* Products table */}
             {data.popular_products && data.popular_products.length > 0 && (

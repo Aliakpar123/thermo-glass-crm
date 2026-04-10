@@ -11,6 +11,7 @@ import {
   OrderStatus,
   ORDER_STATUS_LABELS,
   PRODUCT_TYPE_LABELS,
+  LOSS_REASON_LABELS,
 } from '@/types';
 
 export default function OrderDetailPage() {
@@ -26,6 +27,9 @@ export default function OrderDetailPage() {
   const [newStatus, setNewStatus] = useState<OrderStatus>('new');
   const [comment, setComment] = useState('');
   const [factoryOrderNumber, setFactoryOrderNumber] = useState('');
+  const [showLossModal, setShowLossModal] = useState(false);
+  const [lossReason, setLossReason] = useState('');
+  const [lossReasonOther, setLossReasonOther] = useState('');
 
   const fetchData = () => {
     Promise.all([
@@ -47,9 +51,17 @@ export default function OrderDetailPage() {
 
   const handleStatusChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newStatus === 'cancelled') {
+      setShowLossModal(true);
+      return;
+    }
+    await submitStatusChange();
+  };
+
+  const submitStatusChange = async (extraFields?: Record<string, string>) => {
     setSaving(true);
     try {
-      const body: Record<string, string> = { status: newStatus, comment };
+      const body: Record<string, string> = { status: newStatus, comment, ...extraFields };
       if (newStatus === 'factory' && factoryOrderNumber) {
         body.factory_order_number = factoryOrderNumber;
       }
@@ -60,11 +72,20 @@ export default function OrderDetailPage() {
       });
       if (res.ok) {
         setComment('');
+        setShowLossModal(false);
+        setLossReason('');
+        setLossReasonOther('');
         fetchData();
       }
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLossReasonSubmit = () => {
+    if (!lossReason) return;
+    const reason = lossReason === 'other' ? (lossReasonOther || 'Другое') : lossReason;
+    submitStatusChange({ loss_reason: reason });
   };
 
   if (loading) {
@@ -246,6 +267,63 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Loss Reason Modal */}
+      {showLossModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Причина отмены</h2>
+                <button onClick={() => setShowLossModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">
+                  &times;
+                </button>
+              </div>
+              <div className="space-y-3">
+                {Object.entries(LOSS_REASON_LABELS).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loss_reason"
+                      value={key}
+                      checked={lossReason === key}
+                      onChange={() => setLossReason(key)}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-900">{label}</span>
+                  </label>
+                ))}
+                {lossReason === 'other' && (
+                  <input
+                    type="text"
+                    value={lossReasonOther}
+                    onChange={(e) => setLossReasonOther(e.target.value)}
+                    placeholder="Укажите причину..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+                  />
+                )}
+              </div>
+              <div className="flex justify-end gap-3 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowLossModal(false)}
+                  className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={!lossReason}
+                  onClick={handleLossReasonSubmit}
+                  className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  Подтвердить отмену
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

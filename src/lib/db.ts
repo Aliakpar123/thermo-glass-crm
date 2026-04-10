@@ -115,6 +115,10 @@ async function initDb() {
       )
     `;
 
+    // Migrations - add columns if they don't exist
+    try { await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS loss_reason TEXT DEFAULT ''`; } catch(e) { /* column may already exist */ }
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS loss_reason TEXT DEFAULT ''`; } catch(e) { /* column may already exist */ }
+
     // Seed users if empty
     const result = await sql`SELECT COUNT(*) as count FROM users`;
     if (Number(result[0].count) === 0) {

@@ -19,6 +19,7 @@ export interface Lead {
   message: string;
   status: LeadStatus;
   assigned_to: number | null;
+  loss_reason: string;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +54,7 @@ export interface Order {
   prepayment: number;
   status: OrderStatus;
   factory_order_number: string;
+  loss_reason: string;
   created_at: string;
   updated_at: string;
   client_name?: string;
@@ -107,6 +109,15 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   contacted: 'Связались',
   converted: 'Конвертирована',
   lost: 'Потеряна',
+};
+
+export const LOSS_REASON_LABELS: Record<string, string> = {
+  expensive: 'Дорого',
+  competitor: 'Выбрал конкурента',
+  changed_mind: 'Передумал',
+  no_answer: 'Не отвечает',
+  slow: 'Долгие сроки',
+  other: 'Другое',
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {

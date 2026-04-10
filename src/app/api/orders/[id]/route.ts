@@ -48,7 +48,7 @@ export async function PUT(
     const {
       client_id, manager_id, product_type, description,
       dimensions, quantity, amount, prepayment, status,
-      factory_order_number, comment, changed_by
+      factory_order_number, comment, changed_by, loss_reason
     } = body;
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
@@ -71,6 +71,7 @@ export async function PUT(
           prepayment = ${prepayment ?? existing.prepayment},
           status = ${newStatus},
           factory_order_number = ${factory_order_number ?? existing.factory_order_number},
+          loss_reason = ${loss_reason !== undefined ? loss_reason : (existing.loss_reason || '')},
           updated_at = NOW()
       WHERE id = ${Number(id)}
     `;

@@ -35,7 +35,7 @@ export async function PUT(
     const sql = await getDb();
     const { id } = await params;
     const body = await request.json();
-    const { name, phone, source, message, status, assigned_to } = body;
+    const { name, phone, source, message, status, assigned_to, loss_reason } = body;
 
     const existingRows = await sql`SELECT * FROM leads WHERE id = ${Number(id)}`;
     const existing = existingRows[0] as Record<string, unknown> | undefined;
@@ -51,6 +51,7 @@ export async function PUT(
           message = ${message ?? existing.message},
           status = ${status ?? existing.status},
           assigned_to = ${assigned_to !== undefined ? assigned_to : existing.assigned_to},
+          loss_reason = ${loss_reason !== undefined ? loss_reason : (existing.loss_reason || '')},
           updated_at = NOW()
       WHERE id = ${Number(id)}
     `;
