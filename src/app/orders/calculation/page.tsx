@@ -99,8 +99,7 @@ function CalculationForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...calcData,
-            status: 'calculation',
-            comment: 'Заявка на расчёт заполнена',
+            comment: 'Расчёт сохранён',
           }),
         });
       } else {
@@ -129,7 +128,8 @@ function CalculationForm() {
           });
         }
         const order = await res.json();
-        router.push(`/deals/${order.id}`);
+        // Return to deal card
+        router.push(`/deals/${isEditing ? orderId : order.id}`);
       }
     } finally {
       setSaving(false);
