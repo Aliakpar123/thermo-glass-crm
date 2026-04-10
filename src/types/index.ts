@@ -40,7 +40,7 @@ export interface Client {
 
 export type ProductType = 'steklopaket' | 'krovlya' | 'dver' | 'pol' | 'zenitniy_fonar' | 'mansardnoe_okno' | 'zimniy_sad' | 'carbon_glass' | 'other';
 
-export type OrderStatus = 'new' | 'calculation' | 'approved' | 'factory' | 'production' | 'delivery' | 'installation' | 'completed' | 'cancelled';
+export type OrderStatus = 'new' | 'contacted' | 'calculation' | 'approved' | 'invoiced' | 'paid' | 'factory' | 'production' | 'delivery' | 'installation' | 'completed' | 'cancelled';
 
 export interface Order {
   id: number;
@@ -58,6 +58,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   client_name?: string;
+  client_phone?: string;
   manager_name?: string;
 }
 
@@ -84,15 +85,18 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 };
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  new: 'Новый',
-  calculation: 'Расчёт',
-  approved: 'Согласован',
-  factory: 'Отправлен на завод',
-  production: 'В производстве',
+  new: 'Новый контакт',
+  contacted: 'Связались',
+  calculation: 'КП отправлено',
+  approved: 'Переговоры',
+  invoiced: 'Счёт выставлен',
+  paid: 'Оплачен',
+  factory: 'На заводе',
+  production: 'Производство',
   delivery: 'Доставка',
   installation: 'Монтаж',
   completed: 'Завершён',
-  cancelled: 'Отменён',
+  cancelled: 'Потерян',
 };
 
 export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {

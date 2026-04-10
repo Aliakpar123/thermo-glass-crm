@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
 
     const orders = await sql`
-      SELECT o.*, c.name as client_name, u.name as manager_name
+      SELECT o.*, c.name as client_name, c.phone as client_phone, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     `;
 
     const order = await sql`
-      SELECT o.*, c.name as client_name, u.name as manager_name
+      SELECT o.*, c.name as client_name, c.phone as client_phone, u.name as manager_name
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
