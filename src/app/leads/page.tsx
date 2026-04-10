@@ -119,7 +119,7 @@ export default function LeadsPage() {
             <div className="text-gray-500">Загрузка...</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-gray-900">
                 <thead>
                   <tr className="text-left text-gray-500 border-b">
                     <th className="pb-3 font-medium">Имя</th>

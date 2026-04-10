@@ -109,7 +109,7 @@ export default function StaffPage() {
             <p className="text-gray-500">Нет данных</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-gray-900">
                 <thead>
                   <tr className="text-left text-gray-500 border-b">
                     <th className="pb-3 font-medium">Сотрудник</th>

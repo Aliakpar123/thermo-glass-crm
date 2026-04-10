@@ -77,7 +77,7 @@ export default function DashboardPage() {
                 {latestLeads.length === 0 ? (
                   <p className="text-gray-500 text-sm">Нет заявок</p>
                 ) : (
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm text-gray-900">
                     <thead>
                       <tr className="text-left text-gray-500 border-b">
                         <th className="pb-2 font-medium">Имя</th>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
                 {latestOrders.length === 0 ? (
                   <p className="text-gray-500 text-sm">Нет заказов</p>
                 ) : (
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm text-gray-900">
                     <thead>
                       <tr className="text-left text-gray-500 border-b">
                         <th className="pb-2 font-medium">№</th>

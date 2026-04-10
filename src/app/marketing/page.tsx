@@ -195,7 +195,7 @@ export default function MarketingPage() {
             {data.popular_products && data.popular_products.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-5">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Продукты по популярности</h2>
-                <table className="w-full text-sm">
+                <table className="w-full text-sm text-gray-900">
                   <thead>
                     <tr className="text-left text-gray-500 border-b">
                       <th className="pb-2 font-medium">Продукт</th>
