@@ -48,7 +48,9 @@ export async function PUT(
     const {
       client_id, manager_id, product_type, description,
       dimensions, quantity, amount, prepayment, status,
-      factory_order_number, comment, changed_by, loss_reason
+      factory_order_number, comment, changed_by, loss_reason,
+      object_city, items_json, heating_type, required_power,
+      multifunctional_glass, glass_color, room_type, room_area, total_area
     } = body;
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
@@ -72,6 +74,15 @@ export async function PUT(
           status = ${newStatus},
           factory_order_number = ${factory_order_number ?? existing.factory_order_number},
           loss_reason = ${loss_reason !== undefined ? loss_reason : (existing.loss_reason || '')},
+          object_city = ${object_city ?? existing.object_city},
+          items_json = ${items_json ?? existing.items_json},
+          heating_type = ${heating_type ?? existing.heating_type},
+          required_power = ${required_power ?? existing.required_power},
+          multifunctional_glass = ${multifunctional_glass ?? existing.multifunctional_glass},
+          glass_color = ${glass_color ?? existing.glass_color},
+          room_type = ${room_type ?? existing.room_type},
+          room_area = ${room_area ?? existing.room_area},
+          total_area = ${total_area ?? existing.total_area},
           updated_at = NOW()
       WHERE id = ${Number(id)}
     `;

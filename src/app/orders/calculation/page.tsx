@@ -27,10 +27,12 @@ const emptyRow = (): ItemRow => ({
 function CalculationForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const orderId = searchParams.get('order_id'); // If editing existing deal
   const leadId = searchParams.get('lead_id');
   const clientId = searchParams.get('client_id');
   const clientName = searchParams.get('client_name') || '';
   const clientPhone = searchParams.get('client_phone') || '';
+  const isEditing = !!orderId;
 
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
@@ -76,32 +78,50 @@ function CalculationForm() {
 
     setSaving(true);
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: Number(clientId),
-          lead_id: leadId ? Number(leadId) : null,
-          product_type: 'steklopaket',
-          description: `Заявка на расчет: ${clientName}`,
-          object_city: form.object_city,
-          items_json: JSON.stringify(filledItems),
-          heating_type: form.heating_type,
-          required_power: Number(form.required_power) || 0,
-          multifunctional_glass: form.multifunctional_glass,
-          glass_color: form.glass_color,
-          room_type: form.room_type,
-          room_area: Number(form.room_area) || 0,
-          total_area: Math.round(totalArea * 100) / 100,
-          quantity: filledItems.reduce((s, i) => s + (Number(i.qty) || 0), 0),
-          amount: 0,
-          prepayment: 0,
-        }),
-      });
+      const calcData = {
+        object_city: form.object_city,
+        items_json: JSON.stringify(filledItems),
+        heating_type: form.heating_type,
+        required_power: Number(form.required_power) || 0,
+        multifunctional_glass: form.multifunctional_glass,
+        glass_color: form.glass_color,
+        room_type: form.room_type,
+        room_area: Number(form.room_area) || 0,
+        total_area: Math.round(totalArea * 100) / 100,
+        quantity: filledItems.reduce((s, i) => s + (Number(i.qty) || 0), 0),
+      };
+
+      let res;
+      if (isEditing) {
+        // Update existing deal with calculation data
+        res = await fetch(`/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...calcData,
+            status: 'calculation',
+            comment: 'Заявка на расчёт заполнена',
+          }),
+        });
+      } else {
+        // Create new order
+        res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...calcData,
+            client_id: Number(clientId),
+            lead_id: leadId ? Number(leadId) : null,
+            product_type: 'steklopaket',
+            description: `Заявка на расчет: ${clientName}`,
+            amount: 0,
+            prepayment: 0,
+          }),
+        });
+      }
 
       if (res.ok) {
-        // Update lead status to converted if came from a lead
-        if (leadId) {
+        if (leadId && !isEditing) {
           await fetch(`/api/leads/${leadId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -109,7 +129,7 @@ function CalculationForm() {
           });
         }
         const order = await res.json();
-        router.push(`/orders/${order.id}`);
+        router.push(`/deals/${order.id}`);
       }
     } finally {
       setSaving(false);
@@ -348,7 +368,7 @@ function CalculationForm() {
             disabled={saving}
             className="px-8 py-3 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
           >
-            {saving ? 'Отправка...' : 'Создать заявку на расчет'}
+            {saving ? 'Сохранение...' : isEditing ? 'Сохранить расчёт' : 'Создать заявку на расчет'}
           </button>
           <button
             type="button"
