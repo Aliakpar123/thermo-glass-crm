@@ -100,6 +100,41 @@ interface Deal {
   next_action_text: string | null;
 }
 
+// --- Manager avatar colors ---
+
+const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+function getManagerColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return MANAGER_COLORS[Math.abs(hash) % MANAGER_COLORS.length];
+}
+
+// --- Format amount short ---
+
+function formatAmount(amount: number): string {
+  if (amount >= 1000000) return (amount / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (amount >= 1000) return (amount / 1000).toFixed(0) + 'K';
+  return String(amount);
+}
+
+// --- Status dot colors (hex) ---
+
+const STATUS_DOT_COLORS: Record<OrderStatus, string> = {
+  new: '#3b82f6',
+  contacted: '#eab308',
+  calculation: '#f97316',
+  approved: '#a855f7',
+  invoiced: '#6366f1',
+  paid: '#22c55e',
+  factory: '#8b5cf6',
+  production: '#f59e0b',
+  delivery: '#06b6d4',
+  installation: '#14b8a6',
+  completed: '#10b981',
+  cancelled: '#ef4444',
+};
+
 // --- WhatsApp SVG icon ---
 
 function WhatsAppIcon() {
@@ -129,6 +164,10 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
   };
 
   const phone = deal.client_phone?.replace(/\D/g, '');
+  const managerName = deal.manager_name || '\u2014';
+  const managerColor = getManagerColor(managerName);
+  const managerInitial = (managerName).charAt(0).toUpperCase();
+  const productShort = PRODUCT_TYPE_LABELS[deal.product_type as keyof typeof PRODUCT_TYPE_LABELS] || deal.product_type;
 
   return (
     <div
@@ -136,24 +175,31 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-lg shadow-sm p-3 border-l-4 ${CARD_BORDER_COLORS[status]} hover:shadow-md transition cursor-grab active:cursor-grabbing`}
+      className={`deal-card bg-white rounded-xl shadow-sm p-3 border-l-4 ${CARD_BORDER_COLORS[status]} cursor-grab active:cursor-grabbing`}
     >
-      {/* Row 1: name + WhatsApp */}
-      <div className="flex items-center justify-between">
+      {/* Row 1: status dot + name + amount + WhatsApp */}
+      <div className="flex items-center gap-1.5">
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: STATUS_DOT_COLORS[status] }}
+        />
         <Link
           href={`/deals/${deal.id}`}
-          className="text-sm font-semibold text-gray-900 hover:text-blue-600 truncate"
+          className="text-sm font-bold text-gray-900 hover:text-blue-600 truncate flex-1"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {deal.client_name || '\u2014'}
         </Link>
+        <span className="text-sm font-semibold text-gray-900 shrink-0 ml-auto">
+          {'\u20B8'}{formatAmount(Number(deal.amount))}
+        </span>
         {phone && (
           <a
             href={`https://wa.me/${phone}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-500 hover:text-green-600 shrink-0 ml-1"
+            className="text-green-500 hover:text-green-600 shrink-0 ml-0.5"
             title="WhatsApp"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -163,38 +209,42 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
         )}
       </div>
 
-      {/* Row 2: product type */}
+      {/* Row 2: product + city */}
       <div className="text-xs text-gray-500 mt-1 truncate">
-        {PRODUCT_TYPE_LABELS[deal.product_type as keyof typeof PRODUCT_TYPE_LABELS] || deal.product_type}
+        {productShort}{deal.client_city ? ` \u00B7 ${deal.client_city}` : ''}
       </div>
 
-      {/* Row 3: amount */}
-      <div className="text-sm font-bold text-gray-900 mt-1">
-        {Number(deal.amount).toLocaleString('ru-RU')} {'\u20B8'}
+      {/* Row 3: manager avatar + manager name + days */}
+      <div className="flex items-center gap-1.5 mt-2">
+        <div
+          className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+          style={{ backgroundColor: managerColor }}
+        >
+          {managerInitial}
+        </div>
+        <span className="text-xs text-gray-900 truncate">{managerName}</span>
+        {deal.days_in_stage != null && (
+          <>
+            <span className="text-xs text-gray-400">&middot;</span>
+            <span className="text-xs text-gray-500 whitespace-nowrap">{deal.days_in_stage} \u0434\u043D</span>
+          </>
+        )}
       </div>
 
-      {/* Row 4: manager + days in stage */}
-      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-        <span className="truncate mr-1">{deal.manager_name || '\u2014'}</span>
-        <span className="whitespace-nowrap">
-          {deal.days_in_stage != null ? `${deal.days_in_stage} \u0434\u043D` : ''}
-        </span>
-      </div>
-
-      {/* Reminder / next action */}
+      {/* Row 4: Reminder / next action (optional) */}
       {deal.next_action_date && (() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const actionDate = new Date(deal.next_action_date);
         actionDate.setHours(0, 0, 0, 0);
-        const dateStr = actionDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
         const text = deal.next_action_text || '';
         if (actionDate.getTime() < today.getTime()) {
-          return <div className="mt-1.5 text-xs text-red-600 truncate">{'Просрочено: ' + text + ' (' + dateStr + ')'}</div>;
+          return <div className="mt-1.5 text-[11px] text-red-600 truncate">{'\uD83D\uDD34'} \u041F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E: {text}</div>;
         } else if (actionDate.getTime() === today.getTime()) {
-          return <div className="mt-1.5 text-xs text-orange-600 truncate">{'Сегодня: ' + text}</div>;
+          return <div className="mt-1.5 text-[11px] text-orange-600 truncate">{'\uD83D\uDFE0'} \u0421\u0435\u0433\u043E\u0434\u043D\u044F: {text}</div>;
         } else {
-          return <div className="mt-1.5 text-xs text-gray-500 truncate">{text + ' (' + dateStr + ')'}</div>;
+          const dateStr = actionDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+          return <div className="mt-1.5 text-[11px] text-gray-500 truncate">{text} ({dateStr})</div>;
         }
       })()}
     </div>
@@ -213,29 +263,35 @@ function DroppableColumn({
   onAddDeal?: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
-  const colorClass = STATUS_COLORS[status].split(' ')[1];
+  const colorHex = STATUS_DOT_COLORS[status];
+  const isEmpty = deals.length === 0;
 
   const totalAmount = deals.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
-    <div className="min-w-[220px] max-w-[260px] bg-gray-50 rounded-xl p-3 flex flex-col shrink-0">
-      {/* Column header */}
+    <div className={`${isEmpty ? 'min-w-[180px]' : 'min-w-[220px]'} max-w-[260px] bg-gray-50 rounded-xl p-3 flex flex-col shrink-0 transition-all duration-200`}>
+      {/* Column header with gradient */}
       <div
-        className={`border-t-4 ${STATUS_COLORS[status].split(' ')[0]} rounded-t-sm -mt-3 -mx-3 px-3 pt-3 mb-2`}
+        className="rounded-t-lg -mt-3 -mx-3 px-3 pt-3 mb-2"
+        style={{
+          background: `linear-gradient(135deg, ${colorHex}22 0%, ${colorHex}08 100%)`,
+          borderTop: `3px solid ${colorHex}`,
+        }}
       >
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-semibold text-gray-900">
             {ORDER_STATUS_LABELS[status]}
           </h3>
           <span
-            className={`text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center ${colorClass}`}
+            className="text-xs font-bold text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm"
+            style={{ backgroundColor: colorHex }}
           >
             {deals.length}
           </span>
         </div>
         {totalAmount > 0 && (
-          <div className="text-xs text-gray-500 mb-2">
-            {totalAmount.toLocaleString('ru-RU')} {'\u20B8'}
+          <div className="text-xs font-semibold text-gray-900 mb-2">
+            {'\u20B8'} {formatAmount(totalAmount)}
           </div>
         )}
       </div>
@@ -243,7 +299,7 @@ function DroppableColumn({
       {/* Cards */}
       <div
         ref={setNodeRef}
-        className={`space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-300px)] min-h-[60px] rounded-lg transition-colors ${
+        className={`space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-300px)] min-h-[60px] rounded-lg transition-colors duration-200 ${
           isOver ? 'bg-blue-50 ring-2 ring-blue-300 ring-inset' : ''
         }`}
       >
@@ -277,18 +333,38 @@ function DroppableColumn({
 
 function OverlayCard({ deal }: { deal: Deal }) {
   const status = deal.status;
+  const managerName = deal.manager_name || '\u2014';
+  const managerColor = getManagerColor(managerName);
+  const managerInitial = managerName.charAt(0).toUpperCase();
+
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg p-3 border-l-4 ${CARD_BORDER_COLORS[status]} w-[220px] rotate-2`}
+      className={`bg-white rounded-xl p-3 border-l-4 ${CARD_BORDER_COLORS[status]} w-[230px] opacity-90 rotate-1`}
+      style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.2)', transform: 'scale(1.05) rotate(1deg)' }}
     >
-      <div className="text-sm font-semibold text-gray-900 truncate">
-        {deal.client_name || '\u2014'}
+      <div className="flex items-center gap-1.5">
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: STATUS_DOT_COLORS[status] }}
+        />
+        <span className="text-sm font-bold text-gray-900 truncate flex-1">
+          {deal.client_name || '\u2014'}
+        </span>
+        <span className="text-sm font-semibold text-gray-900 shrink-0">
+          {'\u20B8'}{formatAmount(Number(deal.amount))}
+        </span>
       </div>
-      <div className="text-xs text-gray-500 mt-1">
+      <div className="text-xs text-gray-500 mt-1 truncate">
         {PRODUCT_TYPE_LABELS[deal.product_type as keyof typeof PRODUCT_TYPE_LABELS] || deal.product_type}
       </div>
-      <div className="text-sm font-bold text-gray-900 mt-1">
-        {Number(deal.amount).toLocaleString('ru-RU')} {'\u20B8'}
+      <div className="flex items-center gap-1.5 mt-2">
+        <div
+          className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+          style={{ backgroundColor: managerColor }}
+        >
+          {managerInitial}
+        </div>
+        <span className="text-xs text-gray-900">{managerName}</span>
       </div>
     </div>
   );

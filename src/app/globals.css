@@ -21,3 +21,21 @@ body {
 input, select, textarea {
   color: #111827;
 }
+
+/* Deal card animations */
+.deal-card {
+  transition: all 0.15s ease;
+}
+.deal-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: scale(1.01);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}

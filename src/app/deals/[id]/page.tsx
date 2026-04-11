@@ -106,6 +106,14 @@ function avatarLetter(name: string): string {
   return (name || '?').charAt(0).toUpperCase();
 }
 
+const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+function getManagerColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return MANAGER_COLORS[Math.abs(hash) % MANAGER_COLORS.length];
+}
+
 function whatsappLink(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   return `https://wa.me/${digits}`;
@@ -501,7 +509,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     <Layout>
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fadeIn">
           <button
             onClick={() => router.push('/deals')}
             className="text-sm text-gray-500 hover:text-blue-600 transition mb-3 inline-flex items-center gap-1"
@@ -509,11 +517,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             <span>&larr;</span> Сделки
           </button>
           <div className="flex items-center gap-4 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Сделка #{order.id} &mdash; {order.client_name || 'Клиент'}
+            <h1 className="text-3xl font-extrabold text-gray-900">
+              {order.client_name || 'Клиент'}
             </h1>
+            <span className="text-sm text-gray-400 font-medium">#{order.id}</span>
             <StatusBadge status={order.status} />
-            <span className="text-2xl font-bold text-gray-900 ml-auto">
+            <span className={`text-2xl font-bold ml-auto ${order.status === 'paid' || order.status === 'completed' ? 'text-green-600' : 'text-gray-900'}`}>
               {Number(order.amount).toLocaleString('ru-RU')} &#8376;
             </span>
           </div>
@@ -1008,9 +1017,17 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             <div className="bg-white rounded-xl shadow-sm p-5">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">О сделке</h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-gray-500">Ответственный</span>
-                  <span className="font-medium text-gray-900">{order.manager_name || '\u2014'}</span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: getManagerColor(order.manager_name || '') }}
+                    >
+                      {avatarLetter(order.manager_name || '')}
+                    </div>
+                    <span className="font-medium text-gray-900">{order.manager_name || '\u2014'}</span>
+                  </div>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Создана</span>

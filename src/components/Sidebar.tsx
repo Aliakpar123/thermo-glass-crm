@@ -14,6 +14,14 @@ const navItems = [
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
 ];
 
+const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+function getManagerColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return MANAGER_COLORS[Math.abs(hash) % MANAGER_COLORS.length];
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -74,7 +82,10 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-800 space-y-2">
         {/* Profile */}
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+            style={{ backgroundColor: getManagerColor(session?.user?.name || '') }}
+          >
             {session?.user?.name?.charAt(0) || '?'}
           </div>
           <div className="flex-1 min-w-0">
