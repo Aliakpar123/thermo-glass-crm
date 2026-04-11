@@ -146,9 +146,31 @@ function WhatsAppIcon() {
   );
 }
 
+// --- Lock icon ---
+
+function LockIcon() {
+  return (
+    <svg className="w-3 h-3 inline-block" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
 // --- Draggable Card ---
 
-function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
+function DealCard({
+  deal,
+  status,
+  canDrag,
+  userRole,
+  onTransfer,
+}: {
+  deal: Deal;
+  status: OrderStatus;
+  canDrag: boolean;
+  userRole: string;
+  onTransfer: (dealId: number) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -156,12 +178,12 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: deal.id, data: { status } });
+  } = useSortable({ id: deal.id, data: { status }, disabled: !canDrag });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.4 : canDrag ? 1 : 0.8,
   };
 
   const phone = deal.client_phone?.replace(/\D/g, '');
@@ -175,8 +197,12 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      className={`deal-card bg-white rounded-xl shadow-sm p-3 border-l-4 ${CARD_BORDER_COLORS[status]} cursor-grab active:cursor-grabbing`}
+      {...(canDrag ? listeners : {})}
+      className={`deal-card bg-white rounded-xl shadow-sm p-3 border-l-4 ${CARD_BORDER_COLORS[status]} ${
+        canDrag
+          ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:scale-[1.02] transition-all duration-150'
+          : 'cursor-default'
+      }`}
     >
       {/* Row 1: status dot + name + amount + WhatsApp */}
       <div className="flex items-center gap-1.5">
@@ -248,6 +274,24 @@ function DealCard({ deal, status }: { deal: Deal; status: OrderStatus }) {
           return <div className="mt-1.5 text-[11px] text-gray-500 truncate">{text} ({dateStr})</div>;
         }
       })()}
+
+      {/* Transfer button for client_manager on new/contacted stages */}
+      {canDrag && ['new', 'contacted'].includes(status) && userRole === 'client_manager' && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTransfer(deal.id); }}
+          className="mt-1 w-full text-xs text-blue-600 bg-blue-50 rounded py-1 hover:bg-blue-100 transition font-medium"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {'\u2192'} \u041F\u0435\u0440\u0435\u0434\u0430\u0442\u044C \u0432 \u0440\u0430\u0431\u043E\u0442\u0443
+        </button>
+      )}
+
+      {/* Non-draggable indicator */}
+      {!canDrag && (
+        <div className="mt-1.5 text-[11px] text-gray-400 flex items-center gap-1">
+          <LockIcon /> <span>\u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439: {managerName}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -258,10 +302,16 @@ function DroppableColumn({
   status,
   deals,
   onAddDeal,
+  canDrag,
+  userRole,
+  onTransfer,
 }: {
   status: OrderStatus;
   deals: Deal[];
   onAddDeal?: () => void;
+  canDrag: (deal: Deal) => boolean;
+  userRole: string;
+  onTransfer: (dealId: number) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const colorHex = STATUS_DOT_COLORS[status];
@@ -309,12 +359,19 @@ function DroppableColumn({
           strategy={verticalListSortingStrategy}
         >
           {deals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} status={status} />
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              status={status}
+              canDrag={canDrag(deal)}
+              userRole={userRole}
+              onTransfer={onTransfer}
+            />
           ))}
         </SortableContext>
         {deals.length === 0 && !isOver && (
           <div className="border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-400 text-center py-6">
-            Перетащите сюда
+            \u041F\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0441\u044E\u0434\u0430
           </div>
         )}
         {onAddDeal && (
@@ -322,7 +379,7 @@ function DroppableColumn({
             onClick={onAddDeal}
             className="w-full mt-2 py-2 border-2 border-dashed border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition font-medium"
           >
-            + Новая сделка
+            + \u041D\u043E\u0432\u0430\u044F \u0441\u0434\u0435\u043B\u043A\u0430
           </button>
         )}
       </div>
@@ -397,6 +454,7 @@ function QuickAddModal({
     if (digits.length > 9) formatted += ' ' + digits.slice(9, 11);
     return formatted;
   };
+
   const [city, setCity] = useState('');
   const [source, setSource] = useState<LeadSource>('whatsapp');
   const [productType, setProductType] = useState('steklopaket');
@@ -482,12 +540,12 @@ function QuickAddModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Новая сделка</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">\u041D\u043E\u0432\u0430\u044F \u0441\u0434\u0435\u043B\u043A\u0430</h2>
 
         {duplicateInfo && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
             <p className="text-sm font-medium text-gray-900 mb-2">
-              Клиент {duplicateInfo.name} с телефоном {duplicateInfo.phone} уже существует
+              \u041A\u043B\u0438\u0435\u043D\u0442 {duplicateInfo.name} \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C {duplicateInfo.phone} \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442
             </p>
             <div className="flex gap-2">
               <button
@@ -496,14 +554,14 @@ function QuickAddModal({
                 disabled={saving}
                 className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
               >
-                Создать новую сделку для этого клиента
+                \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u043E\u0432\u0443\u044E \u0441\u0434\u0435\u043B\u043A\u0443 \u0434\u043B\u044F \u044D\u0442\u043E\u0433\u043E \u043A\u043B\u0438\u0435\u043D\u0442\u0430
               </button>
               <button
                 type="button"
                 onClick={() => setDuplicateInfo(null)}
                 className="px-3 py-2 text-xs font-medium text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
               >
-                Отмена
+                \u041E\u0442\u043C\u0435\u043D\u0430
               </button>
             </div>
           </div>
@@ -511,18 +569,18 @@ function QuickAddModal({
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Имя клиента *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">\u0418\u043C\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u0430 *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Аслан"
+              placeholder="\u0410\u0441\u043B\u0430\u043D"
               required
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Телефон *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">\u0422\u0435\u043B\u0435\u0444\u043E\u043D *</label>
             <input
               type="tel"
               value={phone}
@@ -534,17 +592,17 @@ function QuickAddModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Город</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">\u0413\u043E\u0440\u043E\u0434</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Астана"
+                placeholder="\u0410\u0441\u0442\u0430\u043D\u0430"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Источник</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as LeadSource)}
@@ -558,7 +616,7 @@ function QuickAddModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Тип продукта</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">\u0422\u0438\u043F \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u0430</label>
               <select
                 value={productType}
                 onChange={(e) => setProductType(e.target.value)}
@@ -570,7 +628,7 @@ function QuickAddModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Сумма ({'\u20B8'})</label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">\u0421\u0443\u043C\u043C\u0430 ({'\u20B8'})</label>
               <input
                 type="number"
                 value={amount}
@@ -581,23 +639,23 @@ function QuickAddModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Комментарий</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">\u041A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439</label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={2}
-              placeholder="Что хочет клиент, откуда написал..."
+              placeholder="\u0427\u0442\u043E \u0445\u043E\u0447\u0435\u0442 \u043A\u043B\u0438\u0435\u043D\u0442, \u043E\u0442\u043A\u0443\u0434\u0430 \u043D\u0430\u043F\u0438\u0441\u0430\u043B..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Боль клиента</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">\u0411\u043E\u043B\u044C \u043A\u043B\u0438\u0435\u043D\u0442\u0430</label>
             <select
               value={clientPain}
               onChange={(e) => setClientPain(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">Не указана</option>
+              <option value="">\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430</option>
               {Object.entries(PAIN_CATEGORIES).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
@@ -609,14 +667,14 @@ function QuickAddModal({
               disabled={saving || !name.trim() || !phone.trim()}
               className="flex-1 px-4 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
             >
-              {saving ? 'Создание...' : 'Создать сделку'}
+              {saving ? '\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435...' : '\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0434\u0435\u043B\u043A\u0443'}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
             >
-              Отмена
+              \u041E\u0442\u043C\u0435\u043D\u0430
             </button>
           </div>
         </form>
@@ -658,6 +716,36 @@ export default function DealsPage() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
 
+  // Role-based permissions
+  const userId = (session?.user as { id?: string })?.id || '';
+  const userRole = (session?.user as { role?: string })?.role || '';
+  const isAdmin = userRole === 'admin';
+
+  // My deals filter - default: my deals for non-admin, all deals for admin
+  const [showMyDeals, setShowMyDeals] = useState(!isAdmin);
+
+  // Update showMyDeals default when role loads
+  useEffect(() => {
+    if (userRole) {
+      setShowMyDeals(userRole !== 'admin');
+    }
+  }, [userRole]);
+
+  // Order manager id for auto-assignment
+  const [orderManagerId, setOrderManagerId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/staff?period=all')
+      .then(r => r.json())
+      .then(staff => {
+        if (Array.isArray(staff)) {
+          const om = staff.find((s: { role?: string }) => s.role === 'order_manager');
+          if (om) setOrderManagerId(om.id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -669,9 +757,9 @@ export default function DealsPage() {
 
   // Fetch overdue notifications
   useEffect(() => {
-    const userId = (session?.user as { id?: string })?.id || '';
-    const userRole = (session?.user as { role?: string })?.role || '';
-    const params = userRole !== 'admin' && userId ? `?manager_id=${userId}` : '';
+    const nUserId = (session?.user as { id?: string })?.id || '';
+    const nUserRole = (session?.user as { role?: string })?.role || '';
+    const params = nUserRole !== 'admin' && nUserId ? `?manager_id=${nUserId}` : '';
     fetch(`/api/notifications${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -698,27 +786,48 @@ export default function DealsPage() {
     );
   });
 
+  // Apply "my deals" filter
+  const visibleDeals = showMyDeals && userId
+    ? filteredDeals.filter(d => String(d.manager_id) === userId)
+    : filteredDeals;
+
   const getDealsByStatus = useCallback(
     (status: OrderStatus): Deal[] => {
-      return filteredDeals.filter((d) => d.status === status);
+      return visibleDeals.filter((d) => d.status === status);
     },
-    [filteredDeals]
+    [visibleDeals]
   );
 
-  async function updateDealStatus(dealId: number, newStatus: OrderStatus, loss_reason?: string) {
+  // Check if user can drag a specific deal
+  const canDragDeal = useCallback(
+    (deal: Deal): boolean => {
+      return isAdmin || String(deal.manager_id) === userId;
+    },
+    [isAdmin, userId]
+  );
+
+  async function updateDealStatus(dealId: number, newStatus: OrderStatus, loss_reason?: string, newManagerId?: number) {
     try {
-      const body: Record<string, string> = { status: newStatus };
+      const body: Record<string, unknown> = { status: newStatus };
       if (loss_reason) body.loss_reason = loss_reason;
+      if (newManagerId) body.manager_id = newManagerId;
       const res = await fetch(`/api/orders/${dealId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        const updatedDeal = await res.json();
         setDeals((prev) =>
           prev.map((d) =>
             d.id === dealId
-              ? { ...d, status: newStatus, updated_at: new Date().toISOString(), days_in_stage: 0 }
+              ? {
+                  ...d,
+                  status: newStatus,
+                  updated_at: new Date().toISOString(),
+                  days_in_stage: 0,
+                  ...(newManagerId ? { manager_id: newManagerId, manager_name: updatedDeal.manager_name || d.manager_name } : {}),
+                }
               : d
           )
         );
@@ -728,9 +837,14 @@ export default function DealsPage() {
     }
   }
 
+  async function handleTransfer(dealId: number) {
+    if (!orderManagerId) return;
+    await updateDealStatus(dealId, 'calculation', undefined, orderManagerId);
+  }
+
   async function handleLossSubmit() {
     if (!lossModal || !lossReason) return;
-    const reason = lossReason === 'other' ? lossOtherText || 'Другое' : lossReason;
+    const reason = lossReason === 'other' ? lossOtherText || '\u0414\u0440\u0443\u0433\u043E\u0435' : lossReason;
     await updateDealStatus(lossModal.dealId, 'cancelled', reason);
     setLossModal(null);
     setLossReason('');
@@ -767,6 +881,9 @@ export default function DealsPage() {
     const currentDeal = deals.find((d) => d.id === dealId);
     if (!currentDeal || currentDeal.status === newStatus) return;
 
+    // Check permission: only admin or responsible manager can move
+    if (!isAdmin && String(currentDeal.manager_id) !== userId) return;
+
     if (newStatus === 'cancelled') {
       setLossModal({ dealId });
       setLossReason('');
@@ -774,7 +891,17 @@ export default function DealsPage() {
       return;
     }
 
-    updateDealStatus(dealId, newStatus);
+    // Auto-assign: when moving to calculation/approved/invoiced/paid, assign to order_manager
+    let newManagerId: number | undefined;
+    if (
+      ['calculation', 'approved', 'invoiced', 'paid'].includes(newStatus) &&
+      orderManagerId &&
+      currentDeal.manager_id !== orderManagerId
+    ) {
+      newManagerId = orderManagerId;
+    }
+
+    updateDealStatus(dealId, newStatus, undefined, newManagerId);
   }
 
   const cancelledDeals = getDealsByStatus('cancelled');
@@ -788,15 +915,15 @@ export default function DealsPage() {
             <div className="flex items-center gap-2 text-sm text-gray-900 min-w-0">
               <span className="text-lg flex-shrink-0">&#9888;&#65039;</span>
               <span className="truncate">
-                У вас {overdueNotifications.length} просроченных задач
+                \u0423 \u0432\u0430\u0441 {overdueNotifications.length} \u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043D\u044B\u0445 \u0437\u0430\u0434\u0430\u0447
                 {overdueNotifications.length <= 3
-                  ? ' — ' + overdueNotifications.map((n) => {
-                      const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
-                      return `${n.client_name || 'Без имени'} (${label})`;
+                  ? ' \u2014 ' + overdueNotifications.map((n) => {
+                      const label = n.days_overdue > 0 ? `${n.days_overdue} \u0434\u043D` : n.days_overdue === 0 ? '\u0441\u0435\u0433\u043E\u0434\u043D\u044F' : '\u0437\u0430\u0432\u0442\u0440\u0430';
+                      return `${n.client_name || '\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438'} (${label})`;
                     }).join(', ')
-                  : ' — ' + overdueNotifications.slice(0, 2).map((n) => {
-                      const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
-                      return `${n.client_name || 'Без имени'} (${label})`;
+                  : ' \u2014 ' + overdueNotifications.slice(0, 2).map((n) => {
+                      const label = n.days_overdue > 0 ? `${n.days_overdue} \u0434\u043D` : n.days_overdue === 0 ? '\u0441\u0435\u0433\u043E\u0434\u043D\u044F' : '\u0437\u0430\u0432\u0442\u0440\u0430';
+                      return `${n.client_name || '\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438'} (${label})`;
                     }).join(', ') + '...'
                 }
               </span>
@@ -804,7 +931,7 @@ export default function DealsPage() {
                 onClick={() => setShowAllNotifications(!showAllNotifications)}
                 className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap ml-1"
               >
-                {showAllNotifications ? 'Скрыть' : 'Показать все'}
+                {showAllNotifications ? '\u0421\u043A\u0440\u044B\u0442\u044C' : '\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0441\u0435'}
               </button>
             </div>
             <button
@@ -818,7 +945,7 @@ export default function DealsPage() {
         {showAllNotifications && overdueNotifications.length > 0 && !bannerDismissed && (
           <div className="bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
             {overdueNotifications.map((n) => {
-              const label = n.days_overdue > 0 ? `Просрочено ${n.days_overdue} дн` : n.days_overdue === 0 ? 'Сегодня' : 'Завтра';
+              const label = n.days_overdue > 0 ? `\u041F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E ${n.days_overdue} \u0434\u043D` : n.days_overdue === 0 ? '\u0421\u0435\u0433\u043E\u0434\u043D\u044F' : '\u0417\u0430\u0432\u0442\u0440\u0430';
               const labelColor = n.days_overdue > 0 ? 'text-red-500' : n.days_overdue === 0 ? 'text-orange-500' : 'text-yellow-500';
               const dotColor = n.days_overdue > 0 ? 'bg-red-500' : n.days_overdue === 0 ? 'bg-orange-500' : 'bg-yellow-500';
               return (
@@ -833,8 +960,8 @@ export default function DealsPage() {
                   <div className="flex items-start gap-2.5">
                     <span className={`w-2.5 h-2.5 rounded-full ${dotColor} mt-1.5 flex-shrink-0`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{n.client_name || 'Без имени'}</div>
-                      <div className="text-xs text-gray-500 truncate">{n.next_action_text || 'Действие не указано'}</div>
+                      <div className="text-sm font-medium text-gray-900 truncate">{n.client_name || '\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438'}</div>
+                      <div className="text-xs text-gray-500 truncate">{n.next_action_text || '\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u043E'}</div>
                       <div className={`text-xs font-medium ${labelColor} mt-0.5`}>{label}</div>
                     </div>
                   </div>
@@ -846,12 +973,35 @@ export default function DealsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
+          <h1 className="text-2xl font-bold text-gray-900">\u0421\u0434\u0435\u043B\u043A\u0438</h1>
           <div className="flex items-center gap-3">
+            {/* My deals / All deals toggle */}
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+              <button
+                onClick={() => setShowMyDeals(true)}
+                className={`px-3 py-2 text-sm font-medium transition ${
+                  showMyDeals
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                \u041C\u043E\u0438 \u0441\u0434\u0435\u043B\u043A\u0438
+              </button>
+              <button
+                onClick={() => setShowMyDeals(false)}
+                className={`px-3 py-2 text-sm font-medium transition ${
+                  !showMyDeals
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                \u0412\u0441\u0435 \u0441\u0434\u0435\u043B\u043A\u0438
+              </button>
+            </div>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Поиск по имени или телефону..."
+                placeholder="\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u0438\u043C\u0435\u043D\u0438 \u0438\u043B\u0438 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0443..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-64 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
@@ -860,7 +1010,7 @@ export default function DealsPage() {
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm font-bold"
-                  title="Очистить"
+                  title="\u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C"
                 >
                   &times;
                 </button>
@@ -870,14 +1020,14 @@ export default function DealsPage() {
               onClick={() => setShowAddModal(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
             >
-              + Сделка
+              + \u0421\u0434\u0435\u043B\u043A\u0430
             </button>
           </div>
         </div>
 
         {/* Kanban board */}
         {loading ? (
-          <div className="text-gray-500">Загрузка...</div>
+          <div className="text-gray-500">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...</div>
         ) : (
           <DndContext
             sensors={sensors}
@@ -893,6 +1043,9 @@ export default function DealsPage() {
                     status={status}
                     deals={getDealsByStatus(status)}
                     onAddDeal={status === 'new' ? () => setShowAddModal(true) : undefined}
+                    canDrag={canDragDeal}
+                    userRole={userRole}
+                    onTransfer={handleTransfer}
                   />
                 ))}
               </div>
@@ -973,8 +1126,8 @@ export default function DealsPage() {
       {lossModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Причина потери сделки</h2>
-            <p className="text-sm text-gray-500 mb-4">Выберите причину для аналитики</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">\u041F\u0440\u0438\u0447\u0438\u043D\u0430 \u043F\u043E\u0442\u0435\u0440\u0438 \u0441\u0434\u0435\u043B\u043A\u0438</h2>
+            <p className="text-sm text-gray-500 mb-4">\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0440\u0438\u0447\u0438\u043D\u0443 \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438</p>
             <div className="space-y-2 mb-4">
               {Object.entries(LOSS_REASON_LABELS).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -994,7 +1147,7 @@ export default function DealsPage() {
                   type="text"
                   value={lossOtherText}
                   onChange={(e) => setLossOtherText(e.target.value)}
-                  placeholder="Укажите причину..."
+                  placeholder="\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u043F\u0440\u0438\u0447\u0438\u043D\u0443..."
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1"
                 />
               )}
@@ -1005,13 +1158,13 @@ export default function DealsPage() {
                 disabled={!lossReason}
                 className="flex-1 px-4 py-2.5 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 font-medium"
               >
-                Потерять сделку
+                \u041F\u043E\u0442\u0435\u0440\u044F\u0442\u044C \u0441\u0434\u0435\u043B\u043A\u0443
               </button>
               <button
                 onClick={() => setLossModal(null)}
                 className="px-4 py-2.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
               >
-                Назад
+                \u041D\u0430\u0437\u0430\u0434
               </button>
             </div>
           </div>
