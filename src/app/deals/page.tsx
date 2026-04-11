@@ -382,7 +382,21 @@ function QuickAddModal({
 }) {
   const { data: session } = useSession();
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+7 ');
+
+  const formatPhone = (val: string) => {
+    // Keep +7 prefix, only allow digits after
+    let digits = val.replace(/\D/g, '');
+    if (!digits.startsWith('7')) digits = '7' + digits;
+    if (digits.length > 11) digits = digits.slice(0, 11);
+    // Format: +7 XXX XXX XX XX
+    let formatted = '+7';
+    if (digits.length > 1) formatted += ' ' + digits.slice(1, 4);
+    if (digits.length > 4) formatted += ' ' + digits.slice(4, 7);
+    if (digits.length > 7) formatted += ' ' + digits.slice(7, 9);
+    if (digits.length > 9) formatted += ' ' + digits.slice(9, 11);
+    return formatted;
+  };
   const [city, setCity] = useState('');
   const [source, setSource] = useState<LeadSource>('whatsapp');
   const [productType, setProductType] = useState('steklopaket');
@@ -512,7 +526,7 @@ function QuickAddModal({
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="+7 777 123 45 67"
               required
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

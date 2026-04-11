@@ -20,9 +20,21 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [successId, setSuccessId] = useState<number | null>(null);
+  const formatPhone = (val: string) => {
+    let digits = val.replace(/\D/g, '');
+    if (!digits.startsWith('7')) digits = '7' + digits;
+    if (digits.length > 11) digits = digits.slice(0, 11);
+    let formatted = '+7';
+    if (digits.length > 1) formatted += ' ' + digits.slice(1, 4);
+    if (digits.length > 4) formatted += ' ' + digits.slice(4, 7);
+    if (digits.length > 7) formatted += ' ' + digits.slice(7, 9);
+    if (digits.length > 9) formatted += ' ' + digits.slice(9, 11);
+    return formatted;
+  };
+
   const [form, setForm] = useState({
     name: '',
-    phone: '',
+    phone: '+7 ',
     email: '',
     city: '',
     address: '',
@@ -267,9 +279,9 @@ export default function ClientsPage() {
                     type="tel"
                     required
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    placeholder="+7 (___) ___-__-__"
+                    placeholder="+7 777 123 45 67"
                   />
                 </div>
                 <div>

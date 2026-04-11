@@ -400,6 +400,99 @@ function AdminDashboard() {
   );
 }
 
+interface OverdueNotification {
+  id: number;
+  next_action_date: string;
+  next_action_text: string;
+  status: string;
+  client_name: string;
+  client_phone: string;
+  manager_name: string;
+  days_overdue: number;
+}
+
+function OverdueBanner() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [notifications, setNotifications] = useState<OverdueNotification[]>([]);
+  const [dismissed, setDismissed] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    const userId = (session?.user as { id?: string })?.id || '';
+    const userRole = (session?.user as { role?: string })?.role || '';
+    const params = userRole !== 'admin' && userId ? `?manager_id=${userId}` : '';
+    fetch(`/api/notifications${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setNotifications(data);
+      })
+      .catch(() => {});
+  }, [session]);
+
+  if (notifications.length === 0 || dismissed) return null;
+
+  return (
+    <>
+      <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-900 min-w-0">
+          <span className="text-lg flex-shrink-0">&#9888;&#65039;</span>
+          <span className="truncate">
+            У вас {notifications.length} просроченных задач
+            {notifications.length <= 3
+              ? ' — ' + notifications.map((n) => {
+                  const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
+                  return `${n.client_name || 'Без имени'} (${label})`;
+                }).join(', ')
+              : ' — ' + notifications.slice(0, 2).map((n) => {
+                  const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
+                  return `${n.client_name || 'Без имени'} (${label})`;
+                }).join(', ') + '...'
+            }
+          </span>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap ml-1"
+          >
+            {showAll ? 'Скрыть' : 'Показать все'}
+          </button>
+        </div>
+        <button
+          onClick={() => setDismissed(true)}
+          className="text-gray-400 hover:text-gray-600 ml-3 text-lg leading-none flex-shrink-0"
+        >
+          &times;
+        </button>
+      </div>
+      {showAll && (
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+          {notifications.map((n) => {
+            const label = n.days_overdue > 0 ? `Просрочено ${n.days_overdue} дн` : n.days_overdue === 0 ? 'Сегодня' : 'Завтра';
+            const labelColor = n.days_overdue > 0 ? 'text-red-500' : n.days_overdue === 0 ? 'text-orange-500' : 'text-yellow-500';
+            const dotColor = n.days_overdue > 0 ? 'bg-red-500' : n.days_overdue === 0 ? 'bg-orange-500' : 'bg-yellow-500';
+            return (
+              <button
+                key={n.id}
+                onClick={() => router.push(`/deals/${n.id}`)}
+                className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className={`w-2.5 h-2.5 rounded-full ${dotColor} mt-1.5 flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">{n.client_name || 'Без имени'}</div>
+                    <div className="text-xs text-gray-500 truncate">{n.next_action_text || 'Действие не указано'}</div>
+                    <div className={`text-xs font-medium ${labelColor} mt-0.5`}>{label}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role;
@@ -408,6 +501,7 @@ export default function DashboardPage() {
     <Layout>
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Дашборд</h1>
+        <OverdueBanner />
         {userRole === 'admin' ? <AdminDashboard /> : <SimpleDashboard />}
       </div>
     </Layout>
