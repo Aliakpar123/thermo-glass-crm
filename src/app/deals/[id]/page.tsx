@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -119,7 +119,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [order, setOrder] = useState<OrderWithHistory | null>(null);
   const [comments, setComments] = useState<ClientComment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'activity' | 'calculation'>('activity');
+  const [activeTab, setActiveTab] = useState<'activity' | 'calculation' | 'chat'>('activity');
 
   // Status change
   const [newStatus, setNewStatus] = useState<OrderStatus>('new');
@@ -148,6 +148,16 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [painText, setPainText] = useState('');
   const [savingPain, setSavingPain] = useState(false);
   const [showPainDropdown, setShowPainDropdown] = useState(false);
+
+  // Chat messages
+  const [chatMessages, setChatMessages] = useState<{ id: number; order_id: number; client_id: number | null; sender: string; sender_name: string; message: string; created_at: string }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [sendingChat, setSendingChat] = useState(false);
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [pasteSenderName, setPasteSenderName] = useState('');
+  const [pastingChat, setPastingChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {
     try {
@@ -179,6 +189,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       if (filesRes.ok) {
         const filesData: DealFile[] = await filesRes.json();
         setFiles(filesData);
+      }
+
+      // Fetch chat messages
+      const msgsRes = await fetch(`/api/orders/${id}/messages`);
+      if (msgsRes.ok) {
+        const msgsData = await msgsRes.json();
+        setChatMessages(msgsData);
       }
     } catch {
       // ignore
@@ -358,6 +375,61 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     );
   };
 
+  // Chat handlers
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || !order) return;
+    setSendingChat(true);
+    try {
+      const res = await fetch(`/api/orders/${id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: 'manager',
+          sender_name: session?.user?.name || 'Менеджер',
+          message: chatInput.trim(),
+        }),
+      });
+      if (res.ok) {
+        const msgs = await res.json();
+        setChatMessages(msgs);
+        setChatInput('');
+      }
+    } finally {
+      setSendingChat(false);
+    }
+  };
+
+  const handlePasteChat = async () => {
+    if (!pasteText.trim() || !order) return;
+    setPastingChat(true);
+    try {
+      const res = await fetch(`/api/orders/${id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_text: pasteText,
+          sender_name: pasteSenderName || session?.user?.name || '',
+        }),
+      });
+      if (res.ok) {
+        const msgs = await res.json();
+        setChatMessages(msgs);
+        setPasteText('');
+        setPasteSenderName('');
+        setShowPasteModal(false);
+      }
+    } finally {
+      setPastingChat(false);
+    }
+  };
+
+  // Scroll chat to bottom when messages change
+  useEffect(() => {
+    if (activeTab === 'chat' && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, activeTab]);
+
   // Build combined timeline
   const buildTimeline = (): TimelineItem[] => {
     if (!order) return [];
@@ -523,6 +595,16 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     }`}
                   >
                     Заявка на расчёт
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('chat')}
+                    className={`px-6 py-3 text-sm font-medium transition border-b-2 ${
+                      activeTab === 'chat'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Чат
                   </button>
                 </div>
               </div>
@@ -701,6 +783,68 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                         </Link>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Chat tab */}
+                {activeTab === 'chat' && (
+                  <div className="flex flex-col" style={{ height: '500px' }}>
+                    {/* Chat header with paste button */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-900">Переписка с клиентом</span>
+                      <button
+                        onClick={() => setShowPasteModal(true)}
+                        className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition"
+                      >
+                        Вставить переписку WhatsApp
+                      </button>
+                    </div>
+
+                    {/* Messages area */}
+                    <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1">
+                      {chatMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-sm text-gray-400">Нет сообщений. Отправьте сообщение или вставьте переписку WhatsApp.</p>
+                        </div>
+                      ) : (
+                        chatMessages.map((msg) => {
+                          const isManager = msg.sender === 'manager';
+                          const msgTime = new Date(msg.created_at);
+                          const timeStr = msgTime.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                          return (
+                            <div key={msg.id} className={`flex ${isManager ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[75%] ${isManager ? 'bg-green-100 rounded-2xl rounded-br-none' : 'bg-gray-100 rounded-2xl rounded-bl-none'} px-4 py-2`}>
+                                <div className={`text-xs font-medium ${isManager ? 'text-green-700' : 'text-gray-500'}`}>
+                                  {msg.sender_name || (isManager ? 'Менеджер' : 'Клиент')}
+                                </div>
+                                <div className="text-sm text-gray-900">{msg.message}</div>
+                                <div className="text-xs text-gray-400 text-right mt-1">{timeStr}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Message input */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendChatMessage(); } }}
+                        placeholder="Написать сообщение..."
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                      />
+                      <button
+                        onClick={handleSendChatMessage}
+                        disabled={!chatInput.trim() || sendingChat}
+                        className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                      >
+                        {sendingChat ? '...' : 'Отправить'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1018,6 +1162,59 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       </div>
+
+      {/* WhatsApp Paste Modal */}
+      {showPasteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Вставить переписку WhatsApp</h2>
+                <button onClick={() => setShowPasteModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">
+                  &times;
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                Скопируйте экспорт чата из WhatsApp и вставьте сюда. Формат: &laquo;10.04.2026, 14:30 - Имя: Сообщение&raquo;
+              </p>
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-900 mb-1">Имя менеджера (для определения стороны)</label>
+                <input
+                  type="text"
+                  value={pasteSenderName}
+                  onChange={(e) => setPasteSenderName(e.target.value)}
+                  placeholder={session?.user?.name || 'Камилла'}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                />
+              </div>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Вставьте переписку здесь..."
+                rows={10}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400 mb-4"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPasteModal(false)}
+                  className="px-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={!pasteText.trim() || pastingChat}
+                  onClick={handlePasteChat}
+                  className="px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 font-medium"
+                >
+                  {pastingChat ? 'Загрузка...' : 'Загрузить переписку'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loss Reason Modal */}
       {showLossModal && (

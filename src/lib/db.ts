@@ -148,6 +148,18 @@ async function initDb() {
       )`;
     } catch(e) {}
 
+    try { await sql`CREATE TABLE IF NOT EXISTS deal_messages (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL,
+      client_id INTEGER,
+      sender TEXT NOT NULL DEFAULT 'manager',
+      sender_name TEXT DEFAULT '',
+      message TEXT NOT NULL,
+      is_parsed BOOLEAN DEFAULT false,
+      parsed_pains TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
     // Seed users if empty
     const result = await sql`SELECT COUNT(*) as count FROM users`;
     if (Number(result[0].count) === 0) {

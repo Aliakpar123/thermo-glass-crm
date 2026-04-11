@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Layout from '@/components/Layout';
 import { PAIN_CATEGORIES, LOSS_REASON_LABELS } from '@/types';
 import dynamic from 'next/dynamic';
@@ -139,9 +140,25 @@ export default function MarketingWikiPage() {
     <Layout>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Маркетинг Wiki</h1>
-          <p className="text-sm text-gray-900 mt-1">Аналитика болей клиентов</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Маркетинг Wiki</h1>
+            <p className="text-sm text-gray-900 mt-1">Аналитика болей клиентов</p>
+          </div>
+          <Link
+            href="/marketing/wiki/graph"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <circle cx="6" cy="6" r="2" />
+              <circle cx="18" cy="6" r="2" />
+              <circle cx="12" cy="18" r="2" />
+              <line x1="8" y1="6" x2="16" y2="6" />
+              <line x1="7" y1="8" x2="11" y2="16" />
+              <line x1="17" y1="8" x2="13" y2="16" />
+            </svg>
+            Граф знаний
+          </Link>
         </div>
 
         {/* Section 1: Pain Stats */}
