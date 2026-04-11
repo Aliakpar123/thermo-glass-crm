@@ -657,6 +657,58 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </div>
             </div>
+
+            {/* Reminder + Files — in left column for visibility */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Следующее действие</h3>
+                <div className="space-y-2">
+                  <input
+                    type="date"
+                    value={nextActionDate}
+                    onChange={(e) => setNextActionDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                  />
+                  <input
+                    type="text"
+                    value={nextActionText}
+                    onChange={(e) => setNextActionText(e.target.value)}
+                    placeholder="Перезвонить, отправить КП..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                  />
+                  <button
+                    onClick={handleSaveNextAction}
+                    disabled={savingAction}
+                    className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                  >
+                    {savingAction ? 'Сохранение...' : 'Сохранить напоминание'}
+                  </button>
+                  {order.next_action_date && (
+                    <div className={`text-sm font-medium mt-1 ${new Date(order.next_action_date) < new Date() ? 'text-red-600' : 'text-green-600'}`}>
+                      {new Date(order.next_action_date) < new Date() ? 'Просрочено: ' : 'Запланировано: '}
+                      {order.next_action_text} ({new Date(order.next_action_date).toLocaleDateString('ru-RU')})
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Файлы</h3>
+                {files.map((f) => (
+                  <div key={f.id} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                    <a href={f.file_url} download={f.file_name} className="text-sm text-blue-600 hover:underline truncate">{f.file_name}</a>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(f.created_at).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                ))}
+                {files.length === 0 && <p className="text-sm text-gray-400 mb-2">Нет файлов</p>}
+                <label className="block mt-2">
+                  <span className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 cursor-pointer transition">
+                    {uploadingFile ? 'Загрузка...' : 'Прикрепить файл'}
+                  </span>
+                  <input type="file" accept="image/*,.pdf" onChange={handleFileUpload} disabled={uploadingFile} className="hidden" />
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Right column - 1/3 sidebar */}
