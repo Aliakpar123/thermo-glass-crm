@@ -971,7 +971,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Right column - 1/3 sidebar */}
-          <div className="space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
+          <div className="space-y-6">
             {/* Client card */}
             <div className="bg-white rounded-xl shadow-sm p-5">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Контакт</h3>
