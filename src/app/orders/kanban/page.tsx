@@ -52,6 +52,7 @@ const ALL_STATUSES: OrderStatus[] = [
 const STATUS_COLORS: Record<OrderStatus, string> = {
   new: 'border-blue-500 bg-blue-500',
   contacted: 'border-yellow-500 bg-yellow-500',
+  measurement: 'border-cyan-500 bg-cyan-500',
   calculation: 'border-orange-500 bg-orange-500',
   approved: 'border-purple-500 bg-purple-500',
   invoiced: 'border-indigo-500 bg-indigo-500',
@@ -67,6 +68,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 const CARD_BORDER_COLORS: Record<OrderStatus, string> = {
   new: 'border-l-blue-500',
   contacted: 'border-l-yellow-500',
+  measurement: 'border-l-cyan-500',
   calculation: 'border-l-orange-500',
   approved: 'border-l-purple-500',
   invoiced: 'border-l-indigo-500',
