@@ -121,6 +121,20 @@ async function initDb() {
     try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action_date TIMESTAMP`; } catch(e) {}
     try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action_text TEXT DEFAULT ''`; } catch(e) {}
 
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_pain TEXT DEFAULT ''`; } catch(e) {}
+
+    try { await sql`CREATE TABLE IF NOT EXISTS pain_points (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER,
+      client_id INTEGER,
+      pain_category TEXT NOT NULL,
+      pain_text TEXT DEFAULT '',
+      city TEXT DEFAULT '',
+      room_type TEXT DEFAULT '',
+      source TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
     try {
       await sql`CREATE TABLE IF NOT EXISTS deal_files (
         id SERIAL PRIMARY KEY,

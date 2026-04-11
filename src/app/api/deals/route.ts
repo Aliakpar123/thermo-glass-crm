@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
     const body = await request.json();
-    const { name, phone, city, source, comment, product_type, amount, manager_id, existing_client_id } = body;
+    const { name, phone, city, source, comment, product_type, amount, manager_id, existing_client_id, client_pain } = body;
 
     if (!existing_client_id && (!name || !phone)) {
       return NextResponse.json({ error: 'name and phone are required' }, { status: 400 });
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     // 2. Create order linked to client
     const mgr = manager_id || 1;
     const result = await sql`
-      INSERT INTO orders (client_id, manager_id, product_type, amount, status, description)
-      VALUES (${clientId}, ${mgr}, ${product_type || 'steklopaket'}, ${amount || 0}, 'new', ${comment || ''})
+      INSERT INTO orders (client_id, manager_id, product_type, amount, status, description, client_pain)
+      VALUES (${clientId}, ${mgr}, ${product_type || 'steklopaket'}, ${amount || 0}, 'new', ${comment || ''}, ${client_pain || ''})
       RETURNING id
     `;
     const orderId = result[0].id;

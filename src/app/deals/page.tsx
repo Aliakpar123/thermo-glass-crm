@@ -9,6 +9,7 @@ import {
   ORDER_STATUS_LABELS,
   PRODUCT_TYPE_LABELS,
   LOSS_REASON_LABELS,
+  PAIN_CATEGORIES,
   LeadSource,
   LEAD_SOURCE_LABELS,
 } from '@/types';
@@ -310,6 +311,7 @@ function QuickAddModal({
   const [productType, setProductType] = useState('steklopaket');
   const [amount, setAmount] = useState('');
   const [comment, setComment] = useState('');
+  const [clientPain, setClientPain] = useState('');
   const [saving, setSaving] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{ name: string; phone: string; id: number } | null>(null);
 
@@ -326,6 +328,7 @@ function QuickAddModal({
           amount: Number(amount) || 0,
           comment: comment.trim(),
           manager_id: userId,
+          client_pain: clientPain,
         }),
       });
       if (res.ok) {
@@ -359,6 +362,7 @@ function QuickAddModal({
           amount: Number(amount) || 0,
           comment: comment.trim(),
           manager_id: userId,
+          client_pain: clientPain,
         }),
       });
       if (res.status === 409) {
@@ -494,6 +498,19 @@ function QuickAddModal({
               placeholder="Что хочет клиент, откуда написал..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Боль клиента</label>
+            <select
+              value={clientPain}
+              onChange={(e) => setClientPain(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Не указана</option>
+              {Object.entries(PAIN_CATEGORIES).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button

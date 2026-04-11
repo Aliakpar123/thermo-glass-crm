@@ -14,6 +14,7 @@ import {
   PRODUCT_TYPE_LABELS,
   LEAD_SOURCE_LABELS,
   LOSS_REASON_LABELS,
+  PAIN_CATEGORIES,
   LeadSource,
 } from '@/types';
 
@@ -43,6 +44,7 @@ interface OrderWithHistory extends Order {
   client_source?: LeadSource;
   next_action_date?: string | null;
   next_action_text?: string | null;
+  client_pain?: string;
 }
 
 interface DealFile {
@@ -141,6 +143,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [files, setFiles] = useState<DealFile[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // Pain points
+  const [selectedPains, setSelectedPains] = useState<string[]>([]);
+  const [painText, setPainText] = useState('');
+  const [savingPain, setSavingPain] = useState(false);
+  const [showPainDropdown, setShowPainDropdown] = useState(false);
+
   const fetchData = async () => {
     try {
       const orderRes = await fetch(`/api/orders/${id}`);
@@ -155,6 +163,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       setFactoryOrderNumber(orderData.factory_order_number || '');
       setNextActionDate(orderData.next_action_date ? orderData.next_action_date.split('T')[0] : '');
       setNextActionText(orderData.next_action_text || '');
+      setSelectedPains(orderData.client_pain ? orderData.client_pain.split(',').filter(Boolean) : []);
+      setPainText('');
 
       if (orderData.client_id) {
         const commentsRes = await fetch(`/api/clients/${orderData.client_id}/comments`);
@@ -308,6 +318,44 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       setUploadingFile(false);
     }
     e.target.value = '';
+  };
+
+  const handleSavePain = async () => {
+    if (!order) return;
+    setSavingPain(true);
+    try {
+      const painValue = selectedPains.join(',');
+      await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_pain: painValue }),
+      });
+      // Also record each pain in pain_points table
+      for (const cat of selectedPains) {
+        await fetch('/api/wiki/pains', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: order.id,
+            client_id: order.client_id,
+            pain_category: cat,
+            pain_text: painText,
+            city: order.client_city || '',
+            room_type: order.room_type || '',
+            source: order.client_source || '',
+          }),
+        });
+      }
+      fetchData();
+    } finally {
+      setSavingPain(false);
+    }
+  };
+
+  const togglePain = (key: string) => {
+    setSelectedPains((prev) =>
+      prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
+    );
   };
 
   // Build combined timeline
@@ -658,8 +706,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
 
-            {/* Reminder + Files — in left column for visibility */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Reminder + Files + Pain — in left column for visibility */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Следующее действие</h3>
                 <div className="space-y-2">
@@ -707,6 +755,64 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   </span>
                   <input type="file" accept="image/*,.pdf" onChange={handleFileUpload} disabled={uploadingFile} className="hidden" />
                 </label>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Боль клиента</h3>
+                {/* Saved pains as tags */}
+                {order.client_pain && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {order.client_pain.split(',').filter(Boolean).map((p) => (
+                      <span key={p} className="inline-block px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                        {PAIN_CATEGORIES[p] || p}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Multi-select dropdown */}
+                <div className="relative mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPainDropdown(!showPainDropdown)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 text-left flex items-center justify-between"
+                  >
+                    <span className="truncate">
+                      {selectedPains.length > 0
+                        ? selectedPains.map((p) => PAIN_CATEGORIES[p] || p).join(', ')
+                        : 'Выберите боли...'}
+                    </span>
+                    <span className="text-gray-400 ml-1">{showPainDropdown ? '\u25B2' : '\u25BC'}</span>
+                  </button>
+                  {showPainDropdown && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {Object.entries(PAIN_CATEGORIES).map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedPains.includes(key)}
+                            onChange={() => togglePain(key)}
+                            className="accent-blue-600 w-4 h-4"
+                          />
+                          <span className="text-sm text-gray-900">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={painText}
+                  onChange={(e) => setPainText(e.target.value)}
+                  placeholder="Описание боли..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mb-2"
+                />
+                <button
+                  onClick={handleSavePain}
+                  disabled={savingPain || selectedPains.length === 0}
+                  className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                >
+                  {savingPain ? 'Сохранение...' : 'Сохранить боли'}
+                </button>
               </div>
             </div>
           </div>

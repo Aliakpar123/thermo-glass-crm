@@ -124,6 +124,19 @@ export const LOSS_REASON_LABELS: Record<string, string> = {
   other: 'Другое',
 };
 
+export const PAIN_CATEGORIES: Record<string, string> = {
+  cold_windows: 'Холодные окна / промерзание',
+  condensation: 'Конденсат на стёклах',
+  high_heating: 'Высокие счета за отопление',
+  noise: 'Шум с улицы',
+  old_windows: 'Старые окна, нужна замена',
+  balcony: 'Утепление балкона/лоджии',
+  design: 'Дизайн / панорамное остекление',
+  energy: 'Энергоэффективность',
+  safety: 'Безопасность (дети, взлом)',
+  other: 'Другое',
+};
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Администратор',
   order_manager: 'Менеджер заявок',

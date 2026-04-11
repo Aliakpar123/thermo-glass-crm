@@ -51,7 +51,7 @@ export async function PUT(
       factory_order_number, comment, changed_by, loss_reason,
       object_city, items_json, heating_type, required_power,
       multifunctional_glass, glass_color, room_type, room_area, total_area,
-      next_action_date, next_action_text
+      next_action_date, next_action_text, client_pain
     } = body;
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
@@ -86,6 +86,7 @@ export async function PUT(
           total_area = ${total_area ?? existing.total_area},
           next_action_date = ${next_action_date !== undefined ? next_action_date : existing.next_action_date},
           next_action_text = ${next_action_text !== undefined ? next_action_text : existing.next_action_text},
+          client_pain = ${client_pain !== undefined ? client_pain : (existing.client_pain || '')},
           updated_at = NOW()
       WHERE id = ${Number(id)}
     `;

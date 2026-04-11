@@ -10,6 +10,7 @@ const navItems = [
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
+  { href: '/marketing/wiki', label: 'Wiki', icon: '📖', roles: ['admin'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
 ];
 
