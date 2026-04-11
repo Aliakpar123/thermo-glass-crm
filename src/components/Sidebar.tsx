@@ -1,9 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+
+interface Notification {
+  id: number;
+  next_action_date: string;
+  next_action_text: string;
+  status: string;
+  client_name: string;
+  client_phone: string;
+  manager_name: string;
+  days_overdue: number;
+}
 
 const navItems = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager'] },
@@ -22,11 +33,34 @@ function getManagerColor(name: string): string {
   return MANAGER_COLORS[Math.abs(hash) % MANAGER_COLORS.length];
 }
 
+function getNotificationLabel(daysOverdue: number): { text: string; color: string } {
+  if (daysOverdue > 0) {
+    return { text: `Просрочено ${daysOverdue} дн`, color: 'text-red-500' };
+  }
+  if (daysOverdue === 0) {
+    return { text: 'Сегодня', color: 'text-orange-500' };
+  }
+  return { text: 'Завтра', color: 'text-yellow-500' };
+}
+
+function getNotificationDot(daysOverdue: number): string {
+  if (daysOverdue > 0) return 'bg-red-500';
+  if (daysOverdue === 0) return 'bg-orange-500';
+  return 'bg-yellow-500';
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role || '';
+  const userId = (session?.user as { id?: string })?.id || '';
   const [newLeadsCount, setNewLeadsCount] = useState(0);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showPanel, setShowPanel] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userRole) return;
@@ -45,13 +79,120 @@ export default function Sidebar() {
     return () => clearInterval(interval);
   }, [userRole]);
 
+  // Fetch notifications
+  useEffect(() => {
+    if (!userRole) return;
+
+    const fetchNotifications = () => {
+      const params = userRole !== 'admin' && userId ? `?manager_id=${userId}` : '';
+      fetch(`/api/notifications${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setNotifications(data);
+        })
+        .catch(() => {});
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [userRole, userId]);
+
+  // Close panel on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setShowPanel(false);
+      }
+    }
+    if (showPanel) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPanel]);
+
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
       <div className="p-6 border-b border-gray-800">
-        <h1 className="text-xl font-bold">Thermo Glass KZ</h1>
-        <p className="text-gray-400 text-sm mt-1">CRM система</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Thermo Glass KZ</h1>
+            <p className="text-gray-400 text-sm mt-1">CRM система</p>
+          </div>
+          {/* Notification bell */}
+          <div className="relative" ref={panelRef}>
+            <button
+              onClick={() => setShowPanel(!showPanel)}
+              className="relative p-2 rounded-lg hover:bg-gray-800 transition"
+              title="Уведомления"
+            >
+              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {notifications.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4.5 h-4.5 min-w-[18px] min-h-[18px] flex items-center justify-center">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification panel */}
+            {showPanel && (
+              <div className="fixed left-64 top-4 w-80 bg-white rounded-xl shadow-2xl z-50 max-h-[400px] flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-semibold text-gray-900">
+                    Уведомления ({notifications.length})
+                  </span>
+                  <button
+                    onClick={() => setShowPanel(false)}
+                    className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-sm text-gray-500 text-center">
+                      Нет уведомлений
+                    </div>
+                  ) : (
+                    notifications.map((n) => {
+                      const label = getNotificationLabel(n.days_overdue);
+                      const dotColor = getNotificationDot(n.days_overdue);
+                      return (
+                        <button
+                          key={n.id}
+                          onClick={() => {
+                            setShowPanel(false);
+                            router.push(`/deals/${n.id}`);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <span className={`w-2.5 h-2.5 rounded-full ${dotColor} mt-1.5 flex-shrink-0`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {n.client_name || 'Без имени'}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {n.next_action_text || 'Действие не указано'}
+                              </div>
+                              <div className={`text-xs font-medium ${label.color} mt-0.5`}>
+                                {label.text}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">

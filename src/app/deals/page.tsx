@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import { useSession } from 'next-auth/react';
 import {
@@ -612,6 +613,17 @@ function QuickAddModal({
 
 // --- Main page ---
 
+interface OverdueNotification {
+  id: number;
+  next_action_date: string;
+  next_action_text: string;
+  status: string;
+  client_name: string;
+  client_phone: string;
+  manager_name: string;
+  days_overdue: number;
+}
+
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -625,6 +637,13 @@ export default function DealsPage() {
   const [lossReason, setLossReason] = useState('');
   const [lossOtherText, setLossOtherText] = useState('');
 
+  // Notifications
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [overdueNotifications, setOverdueNotifications] = useState<OverdueNotification[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -633,6 +652,19 @@ export default function DealsPage() {
   useEffect(() => {
     fetchDeals();
   }, []);
+
+  // Fetch overdue notifications
+  useEffect(() => {
+    const userId = (session?.user as { id?: string })?.id || '';
+    const userRole = (session?.user as { role?: string })?.role || '';
+    const params = userRole !== 'admin' && userId ? `?manager_id=${userId}` : '';
+    fetch(`/api/notifications${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setOverdueNotifications(data);
+      })
+      .catch(() => {});
+  }, [session]);
 
   function fetchDeals() {
     fetch('/api/deals')
@@ -736,6 +768,68 @@ export default function DealsPage() {
   return (
     <Layout>
       <div className="space-y-4">
+        {/* Overdue notifications banner */}
+        {overdueNotifications.length > 0 && !bannerDismissed && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-900 min-w-0">
+              <span className="text-lg flex-shrink-0">&#9888;&#65039;</span>
+              <span className="truncate">
+                У вас {overdueNotifications.length} просроченных задач
+                {overdueNotifications.length <= 3
+                  ? ' — ' + overdueNotifications.map((n) => {
+                      const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
+                      return `${n.client_name || 'Без имени'} (${label})`;
+                    }).join(', ')
+                  : ' — ' + overdueNotifications.slice(0, 2).map((n) => {
+                      const label = n.days_overdue > 0 ? `${n.days_overdue} дн` : n.days_overdue === 0 ? 'сегодня' : 'завтра';
+                      return `${n.client_name || 'Без имени'} (${label})`;
+                    }).join(', ') + '...'
+                }
+              </span>
+              <button
+                onClick={() => setShowAllNotifications(!showAllNotifications)}
+                className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap ml-1"
+              >
+                {showAllNotifications ? 'Скрыть' : 'Показать все'}
+              </button>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-gray-400 hover:text-gray-600 ml-3 text-lg leading-none flex-shrink-0"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+        {showAllNotifications && overdueNotifications.length > 0 && !bannerDismissed && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+            {overdueNotifications.map((n) => {
+              const label = n.days_overdue > 0 ? `Просрочено ${n.days_overdue} дн` : n.days_overdue === 0 ? 'Сегодня' : 'Завтра';
+              const labelColor = n.days_overdue > 0 ? 'text-red-500' : n.days_overdue === 0 ? 'text-orange-500' : 'text-yellow-500';
+              const dotColor = n.days_overdue > 0 ? 'bg-red-500' : n.days_overdue === 0 ? 'bg-orange-500' : 'bg-yellow-500';
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => {
+                    setShowAllNotifications(false);
+                    router.push(`/deals/${n.id}`);
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${dotColor} mt-1.5 flex-shrink-0`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{n.client_name || 'Без имени'}</div>
+                      <div className="text-xs text-gray-500 truncate">{n.next_action_text || 'Действие не указано'}</div>
+                      <div className={`text-xs font-medium ${labelColor} mt-0.5`}>{label}</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
