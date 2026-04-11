@@ -3,6 +3,7 @@ import { OrderStatus, ORDER_STATUS_LABELS } from '@/types';
 const STATUS_COLORS: Record<OrderStatus, string> = {
   new: 'bg-blue-100 text-blue-800',
   contacted: 'bg-yellow-100 text-yellow-800',
+  measurement: 'bg-cyan-100 text-cyan-800',
   calculation: 'bg-orange-100 text-orange-800',
   approved: 'bg-purple-100 text-purple-800',
   invoiced: 'bg-indigo-100 text-indigo-800',

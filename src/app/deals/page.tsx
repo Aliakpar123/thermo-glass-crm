@@ -34,6 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 const PIPELINE_STAGES: OrderStatus[] = [
   'new',
   'contacted',
+  'measurement',
   'calculation',
   'approved',
   'invoiced',
@@ -52,6 +53,7 @@ const ALL_STATUSES: OrderStatus[] = [...PIPELINE_STAGES, 'cancelled'];
 const STATUS_COLORS: Record<OrderStatus, string> = {
   new: 'border-blue-500 bg-blue-500',
   contacted: 'border-yellow-500 bg-yellow-500',
+  measurement: 'border-cyan-500 bg-cyan-500',
   calculation: 'border-orange-500 bg-orange-500',
   approved: 'border-purple-500 bg-purple-500',
   invoiced: 'border-indigo-500 bg-indigo-500',
@@ -67,6 +69,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 const CARD_BORDER_COLORS: Record<OrderStatus, string> = {
   new: 'border-l-blue-500',
   contacted: 'border-l-yellow-500',
+  measurement: 'border-l-cyan-500',
   calculation: 'border-l-orange-500',
   approved: 'border-l-purple-500',
   invoiced: 'border-l-indigo-500',
@@ -124,6 +127,7 @@ function formatAmount(amount: number): string {
 const STATUS_DOT_COLORS: Record<OrderStatus, string> = {
   new: '#3b82f6',
   contacted: '#eab308',
+  measurement: '#06b6d4',
   calculation: '#f97316',
   approved: '#a855f7',
   invoiced: '#6366f1',
@@ -276,7 +280,7 @@ function DealCard({
       })()}
 
       {/* Transfer button for client_manager on new/contacted stages */}
-      {canDrag && ['new', 'contacted'].includes(status) && userRole === 'client_manager' && (
+      {canDrag && ['new', 'contacted', 'measurement'].includes(status) && userRole === 'client_manager' && (
         <button
           onClick={(e) => { e.stopPropagation(); onTransfer(deal.id); }}
           className="mt-1 w-full text-xs text-blue-600 bg-blue-50 rounded py-1 hover:bg-blue-100 transition font-medium"

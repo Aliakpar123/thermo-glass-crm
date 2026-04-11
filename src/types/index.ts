@@ -40,7 +40,7 @@ export interface Client {
 
 export type ProductType = 'steklopaket' | 'krovlya' | 'dver' | 'pol' | 'zenitniy_fonar' | 'mansardnoe_okno' | 'zimniy_sad' | 'carbon_glass' | 'other';
 
-export type OrderStatus = 'new' | 'contacted' | 'calculation' | 'approved' | 'invoiced' | 'paid' | 'factory' | 'production' | 'delivery' | 'installation' | 'completed' | 'cancelled';
+export type OrderStatus = 'new' | 'contacted' | 'measurement' | 'calculation' | 'approved' | 'invoiced' | 'paid' | 'factory' | 'production' | 'delivery' | 'installation' | 'completed' | 'cancelled';
 
 export interface Order {
   id: number;
@@ -87,6 +87,7 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   new: 'Новый контакт',
   contacted: 'Связались',
+  measurement: 'Замер',
   calculation: 'КП отправлено',
   approved: 'Переговоры',
   invoiced: 'Счёт выставлен',
