@@ -660,7 +660,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Right column - 1/3 sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
             {/* Client card */}
             <div className="bg-white rounded-xl shadow-sm p-5">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Контакт</h3>
@@ -744,6 +744,76 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     <p className="text-gray-900">{order.description}</p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Next action / reminder */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Следующее действие</h3>
+              <div className="space-y-3">
+                <input
+                  type="date"
+                  value={nextActionDate}
+                  onChange={(e) => setNextActionDate(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  value={nextActionText}
+                  onChange={(e) => setNextActionText(e.target.value)}
+                  placeholder="Что нужно сделать..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                />
+                <button
+                  onClick={handleSaveNextAction}
+                  disabled={savingAction}
+                  className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                >
+                  {savingAction ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                {order.next_action_date && (
+                  <div className="text-xs text-gray-900 pt-1">
+                    Текущее: {order.next_action_text || 'Без описания'} ({new Date(order.next_action_date).toLocaleDateString('ru-RU')})
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Files */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Файлы</h3>
+              <div className="space-y-2">
+                {files.length === 0 && (
+                  <p className="text-sm text-gray-900">Нет файлов</p>
+                )}
+                {files.map((f) => (
+                  <div key={f.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={f.file_url}
+                        download={f.file_name}
+                        className="text-sm text-blue-600 hover:underline font-medium truncate block"
+                      >
+                        {f.file_name}
+                      </a>
+                      <div className="text-xs text-gray-900">
+                        {f.uploaded_by_name || 'Пользователь'} &middot; {new Date(f.created_at).toLocaleDateString('ru-RU')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <label className="block mt-2">
+                  <span className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition cursor-pointer">
+                    {uploadingFile ? 'Загрузка...' : 'Прикрепить файл'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleFileUpload}
+                    disabled={uploadingFile}
+                    className="hidden"
+                  />
+                </label>
               </div>
             </div>
 
