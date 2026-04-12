@@ -78,6 +78,13 @@ export async function POST(request: NextRequest) {
 
     await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${mgr}, '', 'Создал сделку', 'deal', ${orderId}, ${(name || '') + ' ' + (phone || '')})`;
 
+    // 3.5 Auto-task: set reminder "Позвонить" in 2 hours
+    await sql`
+      UPDATE orders
+      SET next_action_date = NOW() + INTERVAL '2 hours',
+          next_action_text = 'Позвонить клиенту'
+      WHERE id = ${orderId}
+    `;
 
     // 4. Return the deal with all joined data
     const deal = await sql`

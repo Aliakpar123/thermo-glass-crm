@@ -97,6 +97,30 @@ export async function PUT(
         VALUES (${Number(id)}, ${status}, ${changed_by || existing.manager_id}, ${comment || `Статус изменён на "${status}"`})
       `;
       await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${changed_by || existing.manager_id}, '', 'Изменил статус', 'deal', ${Number(id)}, ${'→ ' + status})`;
+
+      // Auto-tasks based on status change
+      const autoTasks: Record<string, { hours: number; text: string }> = {
+        'contacted': { hours: 24, text: 'Назначить замер' },
+        'measurement': { hours: 48, text: 'Отправить размеры на расчёт' },
+        'calculation': { hours: 24, text: 'Проверить расчёт от завода' },
+        'approved': { hours: 24, text: 'Выставить счёт клиенту' },
+        'invoiced': { hours: 48, text: 'Проверить оплату' },
+        'paid': { hours: 2, text: 'Отправить заказ на завод' },
+        'factory': { hours: 168, text: 'Уточнить сроки производства' },
+        'production': { hours: 168, text: 'Проверить готовность' },
+        'delivery': { hours: 24, text: 'Подтвердить доставку' },
+        'installation': { hours: 48, text: 'Проверить монтаж' },
+      };
+
+      const autoTask = autoTasks[status];
+      if (autoTask) {
+        await sql`
+          UPDATE orders
+          SET next_action_date = NOW() + make_interval(hours => ${autoTask.hours}),
+              next_action_text = ${autoTask.text}
+          WHERE id = ${Number(id)}
+        `;
+      }
     }
 
     const updated = await sql`
