@@ -122,6 +122,13 @@ export async function PUT(
       }
 
       // Auto-assign manager based on stage
+      // new, contacted → Камилла (client_manager)
+      if (['new', 'contacted'].includes(status)) {
+        const clientMgr = await sql`SELECT id FROM users WHERE role = 'client_manager' LIMIT 1`;
+        if (clientMgr.length > 0) {
+          await sql`UPDATE orders SET manager_id = ${clientMgr[0].id} WHERE id = ${Number(id)}`;
+        }
+      }
       // measurement, delivery, installation, completed, factory → Евгений (delivery_manager)
       if (['measurement', 'factory', 'delivery', 'installation', 'completed'].includes(status)) {
         const deliveryMgr = await sql`SELECT id FROM users WHERE role = 'delivery_manager' LIMIT 1`;
