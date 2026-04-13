@@ -15,6 +15,8 @@ import {
   LEAD_SOURCE_LABELS,
   LOSS_REASON_LABELS,
   PAIN_CATEGORIES,
+  EXPENSE_CATEGORIES,
+  PAYMENT_TYPE_LABELS,
   LeadSource,
 } from '@/types';
 
@@ -157,6 +159,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [savingPain, setSavingPain] = useState(false);
   const [showPainDropdown, setShowPainDropdown] = useState(false);
 
+  // Finance state
+  const [payments, setPayments] = useState<{ id: number; amount: number; payment_type: string; payment_date: string; notes: string }[]>([]);
+  const [dealExpenses, setDealExpenses] = useState<{ id: number; category: string; description: string; amount: number; created_at: string }[]>([]);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payType, setPayType] = useState('transfer');
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [expCategory, setExpCategory] = useState('factory');
+  const [expDescription, setExpDescription] = useState('');
+  const [expAmount, setExpAmount] = useState('');
+  const [savingExpense, setSavingExpense] = useState(false);
+
   // Chat messages
   const [chatMessages, setChatMessages] = useState<{ id: number; order_id: number; client_id: number | null; sender: string; sender_name: string; message: string; created_at: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -244,6 +260,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       if (filesRes.ok) {
         const filesData: DealFile[] = await filesRes.json();
         setFiles(filesData);
+      }
+
+      // Fetch payments
+      const payRes = await fetch(`/api/orders/${id}/payments`);
+      if (payRes.ok) {
+        const payData = await payRes.json();
+        if (Array.isArray(payData)) setPayments(payData);
+      }
+
+      // Fetch deal expenses
+      const expRes = await fetch(`/api/orders/${id}/expenses`);
+      if (expRes.ok) {
+        const expData = await expRes.json();
+        if (Array.isArray(expData)) setDealExpenses(expData);
       }
 
       // Fetch chat messages
@@ -429,6 +459,63 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
     );
   };
+
+  // Finance handlers
+  const handleAddPayment = async () => {
+    if (!payAmount || !order) return;
+    setSavingPayment(true);
+    try {
+      await fetch(`/api/orders/${id}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Number(payAmount),
+          payment_type: payType,
+          payment_date: payDate,
+          created_by: (session?.user as Record<string, unknown>)?.id || null,
+        }),
+      });
+      setPayAmount('');
+      setShowPaymentForm(false);
+      // Refresh payments
+      const res = await fetch(`/api/orders/${id}/payments`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setPayments(data);
+      }
+    } catch { /* ignore */ }
+    setSavingPayment(false);
+  };
+
+  const handleAddExpense = async () => {
+    if (!expAmount || !order) return;
+    setSavingExpense(true);
+    try {
+      await fetch(`/api/orders/${id}/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: expCategory,
+          description: expDescription,
+          amount: Number(expAmount),
+          created_by: (session?.user as Record<string, unknown>)?.id || null,
+        }),
+      });
+      setExpAmount('');
+      setExpDescription('');
+      setShowExpenseForm(false);
+      // Refresh expenses
+      const res = await fetch(`/api/orders/${id}/expenses`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setDealExpenses(data);
+      }
+    } catch { /* ignore */ }
+    setSavingExpense(false);
+  };
+
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const totalDealExpenses = dealExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
   // Chat handlers
   const handleSendChatMessage = async () => {
@@ -1038,6 +1125,175 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 >
                   {savingPain ? 'Сохранение...' : 'Сохранить боли'}
                 </button>
+              </div>
+            </div>
+
+            {/* Finance section */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Финансы</h3>
+
+              {/* Payments from client */}
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Оплаты клиента</h4>
+                  <button
+                    onClick={() => setShowPaymentForm(!showPaymentForm)}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    + Оплата
+                  </button>
+                </div>
+                {payments.length > 0 && (
+                  <div className="space-y-1 mb-2">
+                    {payments.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+                        <div>
+                          <span className="text-gray-900">{new Date(p.payment_date).toLocaleDateString('ru-RU')}</span>
+                          <span className="text-gray-500 ml-2 text-xs">{PAYMENT_TYPE_LABELS[p.payment_type] || p.payment_type}</span>
+                        </div>
+                        <span className="text-green-600 font-medium">+{new Intl.NumberFormat('ru-RU').format(Number(p.amount))} &#8376;</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {payments.length === 0 && !showPaymentForm && (
+                  <p className="text-xs text-gray-500 mb-2">Нет оплат</p>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-900 font-medium">Итого оплачено:</span>
+                  <span className="text-green-600 font-bold">{new Intl.NumberFormat('ru-RU').format(totalPaid)} &#8376;</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-gray-900 font-medium">Остаток:</span>
+                  <span className={`font-bold ${(Number(order.amount) - totalPaid) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {new Intl.NumberFormat('ru-RU').format(Number(order.amount) - totalPaid)} &#8376;
+                  </span>
+                </div>
+
+                {showPaymentForm && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+                    <input
+                      type="number"
+                      value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      placeholder="Сумма"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <select
+                      value={payType}
+                      onChange={(e) => setPayType(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    >
+                      {Object.entries(PAYMENT_TYPE_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="date"
+                      value={payDate}
+                      onChange={(e) => setPayDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <button
+                      onClick={handleAddPayment}
+                      disabled={savingPayment || !payAmount}
+                      className="w-full px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 font-medium"
+                    >
+                      {savingPayment ? 'Сохранение...' : 'Добавить оплату'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Deal expenses */}
+              <div className="mb-5 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Расходы по сделке</h4>
+                  <button
+                    onClick={() => setShowExpenseForm(!showExpenseForm)}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    + Расход
+                  </button>
+                </div>
+                {dealExpenses.length > 0 && (
+                  <div className="space-y-1 mb-2">
+                    {dealExpenses.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+                        <div>
+                          <span className="text-gray-900">{EXPENSE_CATEGORIES[e.category] || e.category}</span>
+                          {e.description && <span className="text-gray-500 ml-1 text-xs">({e.description})</span>}
+                        </div>
+                        <span className="text-red-600 font-medium">-{new Intl.NumberFormat('ru-RU').format(Number(e.amount))} &#8376;</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dealExpenses.length === 0 && !showExpenseForm && (
+                  <p className="text-xs text-gray-500 mb-2">Нет расходов</p>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-900 font-medium">Итого расходов:</span>
+                  <span className="text-red-600 font-bold">{new Intl.NumberFormat('ru-RU').format(totalDealExpenses)} &#8376;</span>
+                </div>
+
+                {showExpenseForm && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+                    <select
+                      value={expCategory}
+                      onChange={(e) => setExpCategory(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    >
+                      {Object.entries(EXPENSE_CATEGORIES).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={expDescription}
+                      onChange={(e) => setExpDescription(e.target.value)}
+                      placeholder="Описание"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <input
+                      type="number"
+                      value={expAmount}
+                      onChange={(e) => setExpAmount(e.target.value)}
+                      placeholder="Сумма"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                    />
+                    <button
+                      onClick={handleAddExpense}
+                      disabled={savingExpense || !expAmount}
+                      className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 font-medium"
+                    >
+                      {savingExpense ? 'Сохранение...' : 'Добавить расход'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div className="pt-4 border-t-2 border-gray-300 space-y-2">
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Итого</h4>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-900">Сумма сделки:</span>
+                  <span className="text-gray-900 font-bold">{new Intl.NumberFormat('ru-RU').format(Number(order.amount))} &#8376;</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-900">Оплачено:</span>
+                  <span className="text-green-600 font-bold">{new Intl.NumberFormat('ru-RU').format(totalPaid)} &#8376;</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-900">Расходы:</span>
+                  <span className="text-red-600 font-bold">{new Intl.NumberFormat('ru-RU').format(totalDealExpenses)} &#8376;</span>
+                </div>
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                  <span className="text-gray-900 font-semibold">Прибыль:</span>
+                  <span className={`font-bold text-base ${(totalPaid - totalDealExpenses) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(totalPaid - totalDealExpenses) >= 0 ? '+' : ''}{new Intl.NumberFormat('ru-RU').format(totalPaid - totalDealExpenses)} &#8376;
+                  </span>
+                </div>
               </div>
             </div>
           </div>

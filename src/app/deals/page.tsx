@@ -1052,7 +1052,7 @@ export default function DealsPage() {
                   const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted'];
                   const ORDER_MANAGER_STAGES: OrderStatus[] = ['sent_to_factory', 'calculation'];
                   const DELIVERY_MANAGER_STAGES: OrderStatus[] = ['measurement', 'factory', 'delivery', 'installation', 'completed'];
-                  const ACCOUNTANT_STAGES: OrderStatus[] = ['paid'];
+                  const ACCOUNTANT_STAGES: OrderStatus[] = ['approved', 'paid'];
 
                   let stages = PIPELINE_STAGES;
                   if (showMyDeals && !isAdmin) {

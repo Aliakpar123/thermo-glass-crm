@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v8_nurtay_aliakbar'; // bump to force re-init
+const DB_VERSION = 'v9_accounting'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -169,6 +169,40 @@ async function initDb() {
       client_id INTEGER,
       message TEXT NOT NULL,
       is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // Deal expenses
+    try { await sql`CREATE TABLE IF NOT EXISTS deal_expenses (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      amount NUMERIC NOT NULL DEFAULT 0,
+      created_by INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // General expenses (not tied to deals)
+    try { await sql`CREATE TABLE IF NOT EXISTS general_expenses (
+      id SERIAL PRIMARY KEY,
+      category TEXT NOT NULL,
+      description TEXT NOT NULL,
+      amount NUMERIC NOT NULL DEFAULT 0,
+      expense_date DATE DEFAULT CURRENT_DATE,
+      created_by INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // Payments received from clients
+    try { await sql`CREATE TABLE IF NOT EXISTS payments (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL,
+      amount NUMERIC NOT NULL DEFAULT 0,
+      payment_type TEXT DEFAULT 'transfer',
+      payment_date DATE DEFAULT CURRENT_DATE,
+      notes TEXT DEFAULT '',
+      created_by INTEGER,
       created_at TIMESTAMP DEFAULT NOW()
     )`; } catch(e) {}
 

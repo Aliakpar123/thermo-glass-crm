@@ -139,6 +139,29 @@ export const PAIN_CATEGORIES: Record<string, string> = {
   other: 'Другое',
 };
 
+export const EXPENSE_CATEGORIES: Record<string, string> = {
+  factory: 'Оплата заводу',
+  delivery: 'Доставка',
+  installation: 'Монтаж',
+  materials: 'Материалы',
+  other: 'Прочее',
+};
+
+export const GENERAL_EXPENSE_CATEGORIES: Record<string, string> = {
+  rent: 'Аренда',
+  salary: 'Зарплата',
+  marketing: 'Маркетинг',
+  travel: 'Командировки',
+  office: 'Офис/канцтовары',
+  other: 'Прочее',
+};
+
+export const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  cash: 'Наличные',
+  transfer: 'Перевод',
+  card: 'Карта',
+};
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Администратор',
   order_manager: 'Менеджер заявок',
