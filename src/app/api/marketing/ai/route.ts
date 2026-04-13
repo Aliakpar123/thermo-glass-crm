@@ -40,19 +40,37 @@ export async function POST(request: NextRequest) {
     };
 
     const client = new Anthropic({ apiKey });
+    const systemPrompt = (systemPrompts[type] || systemPrompts.custom) + '\n\n' + crmContext;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: (systemPrompts[type] || systemPrompts.custom) + '\n\n' + crmContext,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    // Try with retry and fallback models
+    const models = ['claude-sonnet-4-20250514', 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'];
+    let lastError = '';
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : '';
+    for (const model of models) {
+      try {
+        const message = await client.messages.create({
+          model,
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: prompt }],
+        });
 
-    return NextResponse.json({ text, type });
+        const text = message.content[0].type === 'text' ? message.content[0].text : '';
+        return NextResponse.json({ text, type, model });
+      } catch (e) {
+        lastError = String(e);
+        // If overloaded, try next model
+        if (String(e).includes('529') || String(e).includes('overloaded') || String(e).includes('Overloaded')) {
+          continue;
+        }
+        // Other errors — stop
+        break;
+      }
+    }
+
+    return NextResponse.json({ error: 'AI временно недоступен. Попробуйте через минуту. ' + lastError }, { status: 500 });
   } catch (error) {
     console.error('AI generation error:', error);
-    return NextResponse.json({ error: 'AI generation failed: ' + String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Ошибка AI: ' + String(error) }, { status: 500 });
   }
 }
