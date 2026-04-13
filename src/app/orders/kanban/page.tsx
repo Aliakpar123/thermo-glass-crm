@@ -27,15 +27,15 @@ type FunnelTab = 'sales' | 'production';
 const SALES_COLUMNS: OrderStatus[] = [
   'new',
   'contacted',
+  'measurement',
+  'sent_to_factory',
   'calculation',
   'approved',
-  'invoiced',
   'paid',
 ];
 
 const PRODUCTION_COLUMNS: OrderStatus[] = [
   'factory',
-  'production',
   'delivery',
   'installation',
   'completed',
