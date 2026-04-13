@@ -145,6 +145,14 @@ export default function MarketingWikiPage() {
             <h1 className="text-2xl font-bold text-gray-900">Маркетинг Wiki</h1>
             <p className="text-sm text-gray-900 mt-1">Аналитика болей клиентов</p>
           </div>
+          <div className="flex items-center gap-3">
+          <Link
+            href="/marketing/content"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
+          >
+            <span>✍️</span>
+            Генератор контента
+          </Link>
           <Link
             href="/marketing/wiki/graph"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
@@ -159,6 +167,7 @@ export default function MarketingWikiPage() {
             </svg>
             Граф знаний
           </Link>
+          </div>
         </div>
 
         {/* Section 1: Pain Stats */}
