@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v5_evgeniy'; // bump to force re-init
+const DB_VERSION = 'v6_mentions'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {

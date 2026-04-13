@@ -100,14 +100,13 @@ export async function PUT(
 
       // Auto-tasks based on status change
       const autoTasks: Record<string, { hours: number; text: string }> = {
-        'contacted': { hours: 24, text: 'Назначить замер' },
-        'measurement': { hours: 48, text: 'Отправить размеры на расчёт' },
-        'calculation': { hours: 24, text: 'Проверить расчёт от завода' },
-        'approved': { hours: 24, text: 'Выставить счёт клиенту' },
-        'invoiced': { hours: 48, text: 'Проверить оплату' },
+        'contacted': { hours: 24, text: 'Назначить обследование/замер' },
+        'measurement': { hours: 48, text: 'Передать заявку на завод' },
+        'sent_to_factory': { hours: 24, text: 'Проверить получение заявки заводом' },
+        'calculation': { hours: 24, text: 'Подготовить КП для клиента' },
+        'approved': { hours: 48, text: 'Согласовать условия с клиентом' },
         'paid': { hours: 2, text: 'Отправить заказ на завод' },
         'factory': { hours: 168, text: 'Уточнить сроки производства' },
-        'production': { hours: 168, text: 'Проверить готовность' },
         'delivery': { hours: 24, text: 'Подтвердить доставку' },
         'installation': { hours: 48, text: 'Проверить монтаж' },
       };

@@ -35,12 +35,11 @@ const PIPELINE_STAGES: OrderStatus[] = [
   'new',
   'contacted',
   'measurement',
+  'sent_to_factory',
   'calculation',
   'approved',
-  'invoiced',
   'paid',
   'factory',
-  'production',
   'delivery',
   'installation',
   'completed',
@@ -54,13 +53,12 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   new: 'border-blue-500 bg-blue-500',
   contacted: 'border-yellow-500 bg-yellow-500',
   measurement: 'border-cyan-500 bg-cyan-500',
+  sent_to_factory: 'border-violet-500 bg-violet-500',
   calculation: 'border-orange-500 bg-orange-500',
   approved: 'border-purple-500 bg-purple-500',
-  invoiced: 'border-indigo-500 bg-indigo-500',
   paid: 'border-green-500 bg-green-500',
-  factory: 'border-violet-500 bg-violet-500',
-  production: 'border-amber-500 bg-amber-500',
-  delivery: 'border-cyan-500 bg-cyan-500',
+  factory: 'border-indigo-500 bg-indigo-500',
+  delivery: 'border-sky-500 bg-sky-500',
   installation: 'border-teal-500 bg-teal-500',
   completed: 'border-emerald-500 bg-emerald-500',
   cancelled: 'border-red-500 bg-red-500',
@@ -70,13 +68,12 @@ const CARD_BORDER_COLORS: Record<OrderStatus, string> = {
   new: 'border-l-blue-500',
   contacted: 'border-l-yellow-500',
   measurement: 'border-l-cyan-500',
+  sent_to_factory: 'border-l-violet-500',
   calculation: 'border-l-orange-500',
   approved: 'border-l-purple-500',
-  invoiced: 'border-l-indigo-500',
   paid: 'border-l-green-500',
-  factory: 'border-l-violet-500',
-  production: 'border-l-amber-500',
-  delivery: 'border-l-cyan-500',
+  factory: 'border-l-indigo-500',
+  delivery: 'border-l-sky-500',
   installation: 'border-l-teal-500',
   completed: 'border-l-emerald-500',
   cancelled: 'border-l-red-500',
@@ -128,13 +125,12 @@ const STATUS_DOT_COLORS: Record<OrderStatus, string> = {
   new: '#3b82f6',
   contacted: '#eab308',
   measurement: '#06b6d4',
+  sent_to_factory: '#7c3aed',
   calculation: '#f97316',
   approved: '#a855f7',
-  invoiced: '#6366f1',
   paid: '#22c55e',
-  factory: '#8b5cf6',
-  production: '#f59e0b',
-  delivery: '#06b6d4',
+  factory: '#6366f1',
+  delivery: '#0ea5e9',
   installation: '#14b8a6',
   completed: '#10b981',
   cancelled: '#ef4444',
@@ -853,7 +849,7 @@ export default function DealsPage() {
 
   async function handleTransfer(dealId: number) {
     if (!orderManagerId) return;
-    await updateDealStatus(dealId, 'calculation', undefined, orderManagerId);
+    await updateDealStatus(dealId, 'sent_to_factory', undefined, orderManagerId);
   }
 
   async function handleLossSubmit() {
@@ -908,7 +904,7 @@ export default function DealsPage() {
     // Auto-assign: when moving to calculation/approved/invoiced/paid, assign to order_manager
     let newManagerId: number | undefined;
     if (
-      ['calculation', 'approved', 'invoiced', 'paid'].includes(newStatus) &&
+      ['sent_to_factory', 'calculation', 'approved', 'paid'].includes(newStatus) &&
       orderManagerId &&
       currentDeal.manager_id !== orderManagerId
     ) {
@@ -1054,7 +1050,7 @@ export default function DealsPage() {
                 {(() => {
                   // Filter columns by role when "Мои сделки" is active
                   const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted', 'measurement'];
-                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['calculation', 'approved', 'invoiced', 'paid', 'factory', 'production'];
+                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['sent_to_factory', 'calculation', 'approved', 'paid', 'factory'];
                   const DELIVERY_MANAGER_STAGES: OrderStatus[] = ['delivery', 'installation', 'completed'];
 
                   let stages = PIPELINE_STAGES;
