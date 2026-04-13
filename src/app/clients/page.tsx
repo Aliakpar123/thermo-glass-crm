@@ -131,7 +131,7 @@ export default function ClientsPage() {
 
         {isClientManager && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-            Заполните данные клиента и нажмите <strong>&laquo;Передать в Отдел Заявки&raquo;</strong>, чтобы Айжан получила заявку.
+            Нажмите <strong>&laquo;→ В сделки&raquo;</strong> чтобы клиент появился на канбан-доске в "Новый контакт".
           </div>
         )}
 
