@@ -9,11 +9,12 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-let initialized = false;
+const DB_VERSION = 'v5_evgeniy'; // bump to force re-init
+let initializedVersion = '';
 
 async function initDb() {
-  if (!sql || initialized) return;
-  initialized = true;
+  if (!sql || initializedVersion === DB_VERSION) return;
+  initializedVersion = DB_VERSION;
 
   try {
     await sql`
@@ -178,7 +179,7 @@ async function initDb() {
     }
   } catch (e) {
     console.error('DB init error:', e);
-    initialized = false;
+    initializedVersion = '';
   }
 }
 
