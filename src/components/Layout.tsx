@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
         <div className="text-gray-400 text-sm">Загрузка...</div>
       </div>
     );
@@ -26,9 +26,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (!session) return null;
 
   return (
-    <div className="flex min-h-screen bg-[#fafbfc]">
+    <div className="flex min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <Sidebar />
-      <main className="flex-1 p-6 overflow-auto">{children}</main>
+      <main className="flex-1 p-6 overflow-auto" style={{ background: 'var(--bg-primary)' }}>{children}</main>
     </div>
   );
 }

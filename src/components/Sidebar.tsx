@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import ThemeToggle from './ThemeToggle';
 
 interface Notification {
   id: number;
@@ -162,13 +163,15 @@ export default function Sidebar() {
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
   return (
-    <aside className="w-56 bg-[#1a1d23] text-white min-h-screen flex flex-col">
+    <aside className="w-56 bg-[#111214] text-white min-h-screen flex flex-col">
       <div className="px-4 py-4 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[15px] font-semibold tracking-tight">Thermo Glass KZ</h1>
             <p className="text-[11px] text-gray-500 mt-0.5">CRM система</p>
           </div>
+          <div className="flex items-center gap-1">
+          <ThemeToggle />
           {/* Notification bell */}
           <div className="relative" ref={panelRef}>
             <button
@@ -288,6 +291,7 @@ export default function Sidebar() {
               </div>
             )}
           </div>
+          </div>
         </div>
       </div>
 
@@ -300,14 +304,14 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-[13px] ${
                 isActive
-                  ? 'bg-white/10 text-white border-l-2 border-[#5e6ad2]'
+                  ? 'bg-[#22c55e]/10 text-[#4ade80] border-l-2 border-[#4ade80]'
                   : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-2 border-transparent'
               }`}
             >
               <span className="text-base">{item.icon}</span>
               {item.label}
               {item.href === '/deals' && newLeadsCount > 0 && (
-                <span className="ml-auto bg-[#5e6ad2] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
+                <span className="ml-auto bg-[#22c55e] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
                   {newLeadsCount}
                 </span>
               )}
