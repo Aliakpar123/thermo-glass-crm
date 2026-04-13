@@ -32,48 +32,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-b from-[#fafbfc] to-[#eef0ff] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 w-full max-w-sm animate-fadeIn">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-3">
-            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white text-2xl font-bold tracking-tight">TG</span>
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-[#5e6ad2] rounded-xl flex items-center justify-center shadow-sm">
+              <span className="text-white text-lg font-semibold tracking-tight">TG</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Thermo Glass KZ</h1>
-          <p className="text-gray-500 mt-2">CRM система</p>
+          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Thermo Glass KZ</h1>
+          <p className="text-gray-400 text-[13px] mt-1">CRM система</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-[13px] border border-red-100">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-gray-600 mb-1.5">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
               placeholder="admin@thermoglass.kz"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[13px] font-medium text-gray-600 mb-1.5">
               Пароль
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
               placeholder="Введите пароль"
               required
             />
@@ -82,14 +82,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
+            className="w-full bg-[#5e6ad2] text-white py-2.5 rounded-lg hover:bg-[#4f5bc0] transition-all duration-150 font-medium text-sm disabled:opacity-50 shadow-sm"
           >
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-          <p className="font-medium mb-1">Аккаунты:</p>
+        <div className="mt-6 p-3.5 bg-gray-50/70 rounded-lg text-[12px] text-gray-400 border border-gray-100">
+          <p className="font-medium text-gray-500 mb-1 text-[11px] uppercase tracking-wide">Аккаунты</p>
           <p>Алиакбар: admin@thermoglass.kz / admin123</p>
           <p>Нуртай: nurtay@thermoglass.kz / manager123</p>
           <p>Алиакпар: aliakpar@thermoglass.kz / manager123</p>

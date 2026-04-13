@@ -198,9 +198,9 @@ function DealCard({
       style={style}
       {...attributes}
       {...(canDrag ? listeners : {})}
-      className={`deal-card bg-white rounded-xl shadow-sm p-3 border-l-4 ${CARD_BORDER_COLORS[status]} ${
+      className={`deal-card bg-white rounded-xl border border-gray-100 p-3 border-l-[3px] ${CARD_BORDER_COLORS[status]} ${
         canDrag
-          ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:scale-[1.02] transition-all duration-150'
+          ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-200 transition-all duration-150'
           : 'cursor-default'
       }`}
     >
@@ -212,13 +212,13 @@ function DealCard({
         />
         <Link
           href={`/deals/${deal.id}`}
-          className="text-sm font-bold text-gray-900 hover:text-blue-600 truncate flex-1"
+          className="text-[13px] font-semibold text-gray-900 hover:text-[#5e6ad2] truncate flex-1"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {deal.client_name || '—'}
         </Link>
-        <span className="text-sm font-semibold text-gray-900 shrink-0 ml-auto">
+        <span className="text-[13px] font-medium text-gray-900 shrink-0 ml-auto">
           {'₸'}{formatAmount(Number(deal.amount))}
         </span>
         {phone && (
@@ -244,12 +244,12 @@ function DealCard({
       {/* Row 3: manager avatar + manager name + days */}
       <div className="flex items-center gap-1.5 mt-2">
         <div
-          className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+          className="w-5 h-5 rounded-full text-white text-[9px] font-semibold flex items-center justify-center shrink-0"
           style={{ backgroundColor: managerColor }}
         >
           {managerInitial}
         </div>
-        <span className="text-xs text-gray-900 truncate">{managerName}</span>
+        <span className="text-[11px] text-gray-500 truncate">{managerName}</span>
         {deal.days_in_stage != null && (
           <>
             <span className="text-xs text-gray-400">&middot;</span>
@@ -279,7 +279,7 @@ function DealCard({
       {canDrag && ['new', 'contacted', 'measurement'].includes(status) && userRole === 'client_manager' && (
         <button
           onClick={(e) => { e.stopPropagation(); onTransfer(deal.id); }}
-          className="mt-1 w-full text-xs text-blue-600 bg-blue-50 rounded py-1 hover:bg-blue-100 transition font-medium"
+          className="mt-1 w-full text-[11px] text-[#5e6ad2] bg-[#eef0ff] rounded-md py-1 hover:bg-[#e0e3ff] transition-all duration-150 font-medium"
           onPointerDown={(e) => e.stopPropagation()}
         >
           {'→'} Передать в работу
@@ -320,28 +320,27 @@ function DroppableColumn({
   const totalAmount = deals.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
-    <div className="min-w-[220px] max-w-[260px] bg-gray-50 rounded-xl p-3 flex flex-col shrink-0 transition-all duration-200">
-      {/* Column header with gradient */}
+    <div className="min-w-[220px] max-w-[260px] bg-gray-50/50 rounded-xl p-3 flex flex-col shrink-0 transition-all duration-200 border border-gray-100/60">
+      {/* Column header */}
       <div
         className="rounded-t-lg -mt-3 -mx-3 px-3 pt-3 mb-2"
         style={{
-          background: `linear-gradient(135deg, ${colorHex}22 0%, ${colorHex}08 100%)`,
-          borderTop: `3px solid ${colorHex}`,
+          background: `linear-gradient(135deg, ${colorHex}10 0%, ${colorHex}05 100%)`,
+          borderTop: `2px solid ${colorHex}`,
         }}
       >
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-[13px] font-medium uppercase tracking-wide text-gray-500">
             {ORDER_STATUS_LABELS[status]}
           </h3>
           <span
-            className="text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shrink-0"
-            style={{ backgroundColor: colorHex }}
+            className="text-[10px] font-semibold text-gray-500 rounded-md w-5 h-5 flex items-center justify-center shrink-0 bg-white border border-gray-200"
           >
             {deals.length}
           </span>
         </div>
         {totalAmount > 0 && (
-          <div className="text-xs font-semibold text-gray-900 mb-2">
+          <div className="text-[11px] font-medium text-gray-400 mb-2">
             {'₸'} {formatAmount(totalAmount)}
           </div>
         )}
@@ -370,14 +369,14 @@ function DroppableColumn({
           ))}
         </SortableContext>
         {deals.length === 0 && !isOver && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-400 text-center py-6">
+          <div className="border border-dashed border-gray-200 rounded-lg text-[11px] text-gray-300 text-center py-6">
             Перетащите сюда
           </div>
         )}
         {onAddDeal && (
           <button
             onClick={onAddDeal}
-            className="w-full mt-2 py-2 border-2 border-dashed border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition font-medium"
+            className="w-full mt-2 py-2 border border-dashed border-[#5e6ad2]/30 rounded-lg text-[12px] text-[#5e6ad2] hover:bg-[#eef0ff] hover:border-[#5e6ad2]/50 transition-all duration-150 font-medium"
           >
             + Новая сделка
           </button>
@@ -397,8 +396,8 @@ function OverlayCard({ deal }: { deal: Deal }) {
 
   return (
     <div
-      className={`bg-white rounded-xl p-3 border-l-4 ${CARD_BORDER_COLORS[status]} w-[230px] opacity-90 rotate-1`}
-      style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.2)', transform: 'scale(1.05) rotate(1deg)' }}
+      className={`bg-white rounded-xl p-3 border-l-[3px] border border-gray-100 ${CARD_BORDER_COLORS[status]} w-[230px] opacity-90 rotate-1`}
+      style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.12)', transform: 'scale(1.05) rotate(1deg)' }}
     >
       <div className="flex items-center gap-1.5">
         <span
@@ -538,9 +537,9 @@ function QuickAddModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Новая сделка</h2>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-[2px]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-gray-100 animate-fadeIn">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Новая сделка</h2>
 
         {duplicateInfo && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
@@ -552,7 +551,7 @@ function QuickAddModal({
                 type="button"
                 onClick={() => createDealForClient(duplicateInfo.id)}
                 disabled={saving}
-                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-[#5e6ad2] rounded-lg hover:bg-[#4f5bc0] transition disabled:opacity-50"
               >
                 Создать новую сделку для этого клиента
               </button>
@@ -576,7 +575,7 @@ function QuickAddModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="Аслан"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
             />
           </div>
           <div>
@@ -587,7 +586,7 @@ function QuickAddModal({
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="+7 777 123 45 67"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -598,7 +597,7 @@ function QuickAddModal({
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Астана"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
               />
             </div>
             <div>
@@ -606,7 +605,7 @@ function QuickAddModal({
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as LeadSource)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
               >
                 {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
@@ -620,7 +619,7 @@ function QuickAddModal({
               <select
                 value={productType}
                 onChange={(e) => setProductType(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
               >
                 {Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
@@ -634,7 +633,7 @@ function QuickAddModal({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
               />
             </div>
           </div>
@@ -645,7 +644,7 @@ function QuickAddModal({
               onChange={(e) => setComment(e.target.value)}
               rows={2}
               placeholder="Что хочет клиент, откуда написал..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
             />
           </div>
           <div>
@@ -653,7 +652,7 @@ function QuickAddModal({
             <select
               value={clientPain}
               onChange={(e) => setClientPain(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
             >
               <option value="">Не указана</option>
               {Object.entries(PAIN_CATEGORIES).map(([key, label]) => (
@@ -665,7 +664,7 @@ function QuickAddModal({
             <button
               type="submit"
               disabled={saving || !name.trim() || !phone.trim()}
-              className="flex-1 px-4 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+              className="flex-1 px-4 py-2.5 text-sm text-white bg-[#5e6ad2] rounded-lg hover:bg-[#4f5bc0] transition disabled:opacity-50 font-medium"
             >
               {saving ? 'Создание...' : 'Создать сделку'}
             </button>
@@ -921,7 +920,7 @@ export default function DealsPage() {
       <div className="space-y-4">
         {/* Overdue notifications banner */}
         {overdueNotifications.length > 0 && !bannerDismissed && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div className="bg-red-50/70 border border-red-100 rounded-xl px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-gray-900 min-w-0">
               <span className="text-lg flex-shrink-0">&#9888;&#65039;</span>
               <span className="truncate">
@@ -939,7 +938,7 @@ export default function DealsPage() {
               </span>
               <button
                 onClick={() => setShowAllNotifications(!showAllNotifications)}
-                className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap ml-1"
+                className="text-[#5e6ad2] hover:text-[#4f5bc0] font-medium whitespace-nowrap ml-1 text-[13px]"
               >
                 {showAllNotifications ? 'Скрыть' : 'Показать все'}
               </button>
@@ -983,26 +982,26 @@ export default function DealsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
+          <h1 className="text-lg font-semibold text-gray-900 tracking-tight">Сделки</h1>
           <div className="flex items-center gap-3">
             {/* My deals / All deals toggle */}
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
               <button
                 onClick={() => setShowMyDeals(true)}
-                className={`px-3 py-2 text-sm font-medium transition ${
+                className={`px-3 py-1.5 text-[13px] font-medium transition-all duration-150 ${
                   showMyDeals
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-900 hover:bg-gray-50'
+                    ? 'bg-[#5e6ad2] text-white'
+                    : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
                 Мои сделки
               </button>
               <button
                 onClick={() => setShowMyDeals(false)}
-                className={`px-3 py-2 text-sm font-medium transition ${
+                className={`px-3 py-1.5 text-[13px] font-medium transition-all duration-150 ${
                   !showMyDeals
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-900 hover:bg-gray-50'
+                    ? 'bg-[#5e6ad2] text-white'
+                    : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
                 Все сделки
@@ -1014,7 +1013,7 @@ export default function DealsPage() {
                 placeholder="Поиск по имени или телефону..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                className="w-64 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] pr-8 shadow-sm transition-all duration-150 placeholder:text-gray-300"
               />
               {searchQuery && (
                 <button
@@ -1028,7 +1027,7 @@ export default function DealsPage() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="bg-[#5e6ad2] text-white px-4 py-1.5 rounded-lg text-[13px] font-medium hover:bg-[#4f5bc0] transition-all duration-150 shadow-sm"
             >
               + Сделка
             </button>
@@ -1150,9 +1149,9 @@ export default function DealsPage() {
 
       {/* Loss reason modal */}
       {lossModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Причина потери сделки</h2>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-gray-100 animate-fadeIn">
+            <h2 className="text-base font-semibold text-gray-900 mb-2">Причина потери сделки</h2>
             <p className="text-sm text-gray-500 mb-4">Выберите причину для аналитики</p>
             <div className="space-y-2 mb-4">
               {Object.entries(LOSS_REASON_LABELS).map(([key, label]) => (

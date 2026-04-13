@@ -162,25 +162,25 @@ export default function Sidebar() {
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
   return (
-    <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
-      <div className="p-6 border-b border-gray-800">
+    <aside className="w-56 bg-[#1a1d23] text-white min-h-screen flex flex-col">
+      <div className="px-4 py-4 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">Thermo Glass KZ</h1>
-            <p className="text-gray-400 text-sm mt-1">CRM система</p>
+            <h1 className="text-[15px] font-semibold tracking-tight">Thermo Glass KZ</h1>
+            <p className="text-[11px] text-gray-500 mt-0.5">CRM система</p>
           </div>
           {/* Notification bell */}
           <div className="relative" ref={panelRef}>
             <button
               onClick={() => setShowPanel(!showPanel)}
-              className="relative p-2 rounded-lg hover:bg-gray-800 transition"
+              className="relative p-1.5 rounded-lg hover:bg-white/5 transition-all duration-150"
               title="Уведомления"
             >
               <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               {totalBadgeCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4.5 h-4.5 min-w-[18px] min-h-[18px] flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-semibold rounded-full min-w-[16px] min-h-[16px] flex items-center justify-center">
                   {totalBadgeCount}
                 </span>
               )}
@@ -188,7 +188,7 @@ export default function Sidebar() {
 
             {/* Notification panel */}
             {showPanel && (
-              <div className="fixed left-64 top-4 w-80 bg-white rounded-xl shadow-2xl z-50 max-h-[400px] flex flex-col">
+              <div className="fixed left-56 top-4 w-80 bg-white rounded-xl shadow-2xl z-50 max-h-[400px] flex flex-col border border-gray-100">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <span className="text-sm font-semibold text-gray-900">
                     Уведомления ({totalBadgeCount})
@@ -291,23 +291,23 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 px-3 py-3 space-y-0.5">
         {filteredNav.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition text-sm ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 text-[13px] ${
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-white/10 text-white border-l-2 border-[#5e6ad2]'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-2 border-transparent'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
+              <span className="text-base">{item.icon}</span>
               {item.label}
               {item.href === '/deals' && newLeadsCount > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="ml-auto bg-[#5e6ad2] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
                   {newLeadsCount}
                 </span>
               )}
@@ -316,36 +316,36 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-800 space-y-2">
+      <div className="px-3 py-3 border-t border-white/5 space-y-1">
         {/* Profile */}
-        <div className="flex items-center gap-3 px-3 py-2">
+        <div className="flex items-center gap-2.5 px-3 py-2">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-semibold"
             style={{ backgroundColor: getManagerColor(session?.user?.name || '') }}
           >
             {session?.user?.name?.charAt(0) || '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white truncate">{session?.user?.name}</div>
-            <div className="text-xs text-gray-400 truncate">{(session?.user as { role?: string })?.role === 'admin' ? 'Администратор' : (session?.user as { role?: string })?.role === 'client_manager' ? 'Менеджер клиентов' : 'Менеджер заявок'}</div>
+            <div className="text-[13px] font-medium text-gray-200 truncate">{session?.user?.name}</div>
+            <div className="text-[11px] text-gray-500 truncate">{(session?.user as { role?: string })?.role === 'admin' ? 'Администратор' : (session?.user as { role?: string })?.role === 'client_manager' ? 'Менеджер клиентов' : 'Менеджер заявок'}</div>
           </div>
         </div>
 
         {/* Settings link */}
         <Link
           href="/profile"
-          className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition"
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-all duration-150"
         >
-          <span className="text-lg">&#9881;</span>
+          <span className="text-sm">&#9881;</span>
           Профиль и настройки
         </Link>
 
         {/* Logout */}
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300 transition font-medium"
+          className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150 font-medium"
         >
-          <span className="text-lg">&#10140;</span>
+          <span className="text-sm">&#10140;</span>
           Выйти
         </button>
       </div>
