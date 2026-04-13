@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'order_manager' | 'client_manager' | 'delivery_manager';
+export type UserRole = 'admin' | 'order_manager' | 'client_manager' | 'delivery_manager' | 'accountant';
 
 export interface User {
   id: number;
@@ -142,4 +142,5 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   order_manager: 'Менеджер заявок',
   client_manager: 'Менеджер клиентов',
   delivery_manager: 'Технический специалист',
+  accountant: 'Бухгалтерия',
 };

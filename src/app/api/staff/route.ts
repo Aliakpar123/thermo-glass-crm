@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Get all managers
     const managers = await sql`
       SELECT id, name, email, role FROM users
-      WHERE role IN ('client_manager', 'admin', 'order_manager', 'delivery_manager')
+      WHERE role IN ('client_manager', 'admin', 'order_manager', 'delivery_manager', 'accountant')
       ORDER BY name
     `;
 

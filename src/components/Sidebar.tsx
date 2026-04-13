@@ -28,13 +28,13 @@ interface MentionNotification {
 }
 
 const navItems = [
-  { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager'] },
-  { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager'] },
+  { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
+  { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
   { href: '/marketing/wiki', label: 'Wiki', icon: '📖', roles: ['admin'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
-  { href: '/semmar', label: 'Semmar', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager'] },
+  { href: '/semmar', label: 'Semmar', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
 ];
 
 const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];

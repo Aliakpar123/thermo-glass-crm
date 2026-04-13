@@ -122,11 +122,32 @@ export async function PUT(
       }
 
       // Auto-assign manager based on stage
-      // delivery, installation, completed → assign to delivery_manager (Евгений)
-      if (['delivery', 'installation', 'completed'].includes(status)) {
+      // measurement, delivery, installation, completed, factory → Евгений (delivery_manager)
+      if (['measurement', 'factory', 'delivery', 'installation', 'completed'].includes(status)) {
         const deliveryMgr = await sql`SELECT id FROM users WHERE role = 'delivery_manager' LIMIT 1`;
         if (deliveryMgr.length > 0) {
           await sql`UPDATE orders SET manager_id = ${deliveryMgr[0].id} WHERE id = ${Number(id)}`;
+        }
+      }
+      // sent_to_factory, calculation → Айжан (order_manager)
+      if (['sent_to_factory', 'calculation'].includes(status)) {
+        const orderMgr = await sql`SELECT id FROM users WHERE role = 'order_manager' LIMIT 1`;
+        if (orderMgr.length > 0) {
+          await sql`UPDATE orders SET manager_id = ${orderMgr[0].id} WHERE id = ${Number(id)}`;
+        }
+      }
+      // approved (На согласовании) → Алиакпар (admin with name Алиакпар)
+      if (status === 'approved') {
+        const aliakpar = await sql`SELECT id FROM users WHERE email = 'aliakpar@thermoglass.kz' LIMIT 1`;
+        if (aliakpar.length > 0) {
+          await sql`UPDATE orders SET manager_id = ${aliakpar[0].id} WHERE id = ${Number(id)}`;
+        }
+      }
+      // paid (Оплачен) → Маржан (accountant)
+      if (status === 'paid') {
+        const marzhan = await sql`SELECT id FROM users WHERE role = 'accountant' LIMIT 1`;
+        if (marzhan.length > 0) {
+          await sql`UPDATE orders SET manager_id = ${marzhan[0].id} WHERE id = ${Number(id)}`;
         }
       }
     }

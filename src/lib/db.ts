@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v6_mentions'; // bump to force re-init
+const DB_VERSION = 'v7_aliakpar_marzhan'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -187,6 +187,20 @@ async function initDb() {
     if (evgeniy.length === 0) {
       const mgrHash2 = bcrypt.hashSync('manager123', 10);
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Евгений', 'evgeniy@thermoglass.kz', ${mgrHash2}, 'delivery_manager')`;
+    }
+
+    // Migration: add Алиакпар if not exists
+    const aliakpar = await sql`SELECT id FROM users WHERE email = 'aliakpar@thermoglass.kz'`;
+    if (aliakpar.length === 0) {
+      const h = bcrypt.hashSync('manager123', 10);
+      await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Алиакпар', 'aliakpar@thermoglass.kz', ${h}, 'admin')`;
+    }
+
+    // Migration: add Маржан if not exists
+    const marzhan = await sql`SELECT id FROM users WHERE email = 'marzhan@thermoglass.kz'`;
+    if (marzhan.length === 0) {
+      const h = bcrypt.hashSync('manager123', 10);
+      await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Маржан', 'marzhan@thermoglass.kz', ${h}, 'accountant')`;
     }
   } catch (e) {
     console.error('DB init error:', e);

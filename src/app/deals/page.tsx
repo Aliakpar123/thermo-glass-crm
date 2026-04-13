@@ -1049,15 +1049,17 @@ export default function DealsPage() {
               <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
                 {(() => {
                   // Filter columns by role when "Мои сделки" is active
-                  const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted', 'measurement'];
-                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['sent_to_factory', 'calculation', 'approved', 'paid', 'factory'];
-                  const DELIVERY_MANAGER_STAGES: OrderStatus[] = ['delivery', 'installation', 'completed'];
+                  const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted'];
+                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['sent_to_factory', 'calculation'];
+                  const DELIVERY_MANAGER_STAGES: OrderStatus[] = ['measurement', 'factory', 'delivery', 'installation', 'completed'];
+                  const ACCOUNTANT_STAGES: OrderStatus[] = ['paid'];
 
                   let stages = PIPELINE_STAGES;
                   if (showMyDeals && !isAdmin) {
                     if (userRole === 'client_manager') stages = CLIENT_MANAGER_STAGES;
                     else if (userRole === 'order_manager') stages = ORDER_MANAGER_STAGES;
                     else if (userRole === 'delivery_manager') stages = DELIVERY_MANAGER_STAGES;
+                    else if (userRole === 'accountant') stages = ACCOUNTANT_STAGES;
                   }
 
                   return stages.map((status) => (
