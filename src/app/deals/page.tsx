@@ -1044,12 +1044,14 @@ export default function DealsPage() {
                 {(() => {
                   // Filter columns by role when "Мои сделки" is active
                   const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted', 'measurement'];
-                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['calculation', 'approved', 'invoiced', 'paid', 'factory', 'production', 'delivery', 'installation', 'completed'];
+                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['calculation', 'approved', 'invoiced', 'paid', 'factory', 'production'];
+                  const DELIVERY_MANAGER_STAGES: OrderStatus[] = ['delivery', 'installation', 'completed'];
 
                   let stages = PIPELINE_STAGES;
                   if (showMyDeals && !isAdmin) {
                     if (userRole === 'client_manager') stages = CLIENT_MANAGER_STAGES;
                     else if (userRole === 'order_manager') stages = ORDER_MANAGER_STAGES;
+                    else if (userRole === 'delivery_manager') stages = DELIVERY_MANAGER_STAGES;
                   }
 
                   return stages.map((status) => (

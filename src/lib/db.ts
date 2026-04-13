@@ -168,6 +168,13 @@ async function initDb() {
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Администратор', 'admin@thermoglass.kz', ${adminHash}, 'admin')`;
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Камилла', 'kamilla@thermoglass.kz', ${mgrHash}, 'client_manager')`;
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Айжан', 'aizhan@thermoglass.kz', ${mgrHash}, 'order_manager')`;
+      await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Евгений', 'evgeniy@thermoglass.kz', ${mgrHash}, 'delivery_manager')`;
+    }
+    // Migration: add Евгений if not exists
+    const evgeniy = await sql`SELECT id FROM users WHERE email = 'evgeniy@thermoglass.kz'`;
+    if (evgeniy.length === 0) {
+      const mgrHash2 = bcrypt.hashSync('manager123', 10);
+      await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Евгений', 'evgeniy@thermoglass.kz', ${mgrHash2}, 'delivery_manager')`;
     }
   } catch (e) {
     console.error('DB init error:', e);

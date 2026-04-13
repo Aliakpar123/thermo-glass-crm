@@ -250,6 +250,7 @@ export default function StaffPage() {
                   <option value="admin">Администратор</option>
                   <option value="order_manager">Менеджер заявок</option>
                   <option value="client_manager">Менеджер клиентов</option>
+                  <option value="delivery_manager">Технический специалист</option>
                 </select>
               </div>
 

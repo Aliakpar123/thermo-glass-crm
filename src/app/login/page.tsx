@@ -93,6 +93,7 @@ export default function LoginPage() {
           <p>Админ: admin@thermoglass.kz / admin123</p>
           <p>Камилла: kamilla@thermoglass.kz / manager123</p>
           <p>Айжан: aizhan@thermoglass.kz / manager123</p>
+          <p>Евгений: evgeniy@thermoglass.kz / manager123</p>
         </div>
       </div>
     </div>
