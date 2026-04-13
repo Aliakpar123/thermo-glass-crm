@@ -167,6 +167,53 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [pastingChat, setPastingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // @mention autocomplete state
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const [teamMembers, setTeamMembers] = useState<{id: number, name: string, role: string}[]>([]);
+
+  // Fetch team on mount
+  useEffect(() => {
+    fetch('/api/staff?period=all').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setTeamMembers(data.map((s: Record<string, unknown>) => ({ id: Number(s.id), name: String(s.name), role: String(s.role) })));
+    }).catch(() => {});
+  }, []);
+
+  // Comment input change handler with @mention detection
+  function handleCommentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    setCommentText(val);
+
+    const lastAtPos = val.lastIndexOf('@');
+    if (lastAtPos >= 0) {
+      const afterAt = val.substring(lastAtPos + 1);
+      if (!afterAt.includes(' ') && afterAt.length <= 20) {
+        setMentionFilter(afterAt.toLowerCase());
+        setShowMentionDropdown(true);
+        return;
+      }
+    }
+    setShowMentionDropdown(false);
+  }
+
+  // Insert mention into comment text
+  function insertMention(name: string) {
+    const lastAtPos = commentText.lastIndexOf('@');
+    const before = commentText.substring(0, lastAtPos);
+    setCommentText(before + '@' + name + ' ');
+    setShowMentionDropdown(false);
+  }
+
+  // Render comment text with highlighted @mentions
+  function renderCommentText(text: string) {
+    const parts = text.split(/(@\S+)/g);
+    return parts.map((part, i) =>
+      part.startsWith('@')
+        ? <span key={i} className="text-blue-600 font-medium">{part}</span>
+        : <span key={i}>{part}</span>
+    );
+  }
+
   const fetchData = async () => {
     try {
       const orderRes = await fetch(`/api/orders/${id}`);
@@ -628,13 +675,38 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                         {avatarLetter(session?.user?.name || '')}
                       </div>
                       <div className="flex-1">
-                        <textarea
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Написать комментарий..."
-                          rows={2}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder:text-gray-400"
-                        />
+                        <div className="relative">
+                          <textarea
+                            value={commentText}
+                            onChange={handleCommentChange}
+                            placeholder="Написать комментарий... Используйте @ для упоминания"
+                            rows={2}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder:text-gray-400"
+                          />
+                          {showMentionDropdown && (
+                            <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-64 max-h-48 overflow-y-auto">
+                              {teamMembers
+                                .filter(m => m.name.toLowerCase().includes(mentionFilter))
+                                .map(m => (
+                                  <button
+                                    key={m.id}
+                                    onClick={() => insertMention(m.name)}
+                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 text-sm"
+                                  >
+                                    <div className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
+                                      {m.name.charAt(0)}
+                                    </div>
+                                    <span className="text-gray-900 font-medium">{m.name}</span>
+                                    <span className="text-gray-400 text-xs">{m.role === 'admin' ? 'Админ' : m.role === 'client_manager' ? 'Клиенты' : m.role === 'order_manager' ? 'Заявки' : 'Доставка'}</span>
+                                  </button>
+                                ))
+                              }
+                              {teamMembers.filter(m => m.name.toLowerCase().includes(mentionFilter)).length === 0 && (
+                                <div className="px-3 py-2 text-sm text-gray-400">Не найдено</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex justify-end mt-2">
                           <button
                             onClick={handleSendComment}
@@ -675,7 +747,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                                   {formatDateTime(item.date)}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 mt-0.5">{item.text}</p>
+                              <p className="text-sm text-gray-600 mt-0.5">{item.type === 'comment' ? renderCommentText(item.text) : item.text}</p>
                             </div>
                           </div>
                         ))

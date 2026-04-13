@@ -41,6 +41,22 @@ export async function POST(
 
     await sql`INSERT INTO activity_log (user_id, user_name, action, entity_type, entity_id, details) VALUES (${user_id || null}, ${user_name || ''}, 'Добавил комментарий', 'client', ${Number(id)}, ${text.substring(0, 100)})`;
 
+    // Detect @mentions in comment text
+    const mentionRegex = /@(\S+)/g;
+    const mentions = [...text.matchAll(mentionRegex)].map((m: RegExpMatchArray) => m[1]);
+
+    if (mentions.length > 0) {
+      for (const mentionName of mentions) {
+        const users = await sql`SELECT id, name FROM users WHERE LOWER(name) LIKE ${('%' + mentionName.toLowerCase() + '%')}`;
+        for (const u of users) {
+          await sql`
+            INSERT INTO mention_notifications (user_id, from_user_name, deal_id, client_id, message)
+            VALUES (${u.id}, ${user_name || ''}, ${null}, ${Number(id)}, ${text.substring(0, 200)})
+          `;
+        }
+      }
+    }
+
     return NextResponse.json(rows[0]);
   } catch (error) {
     console.error('Error creating comment:', error);

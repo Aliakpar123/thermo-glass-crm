@@ -161,6 +161,17 @@ async function initDb() {
       created_at TIMESTAMP DEFAULT NOW()
     )`; } catch(e) {}
 
+    try { await sql`CREATE TABLE IF NOT EXISTS mention_notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      from_user_name TEXT DEFAULT '',
+      deal_id INTEGER,
+      client_id INTEGER,
+      message TEXT NOT NULL,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
     // Seed users if empty
     const result = await sql`SELECT COUNT(*) as count FROM users`;
     if (Number(result[0].count) === 0) {

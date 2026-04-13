@@ -16,6 +16,17 @@ interface Notification {
   days_overdue: number;
 }
 
+interface MentionNotification {
+  id: number;
+  user_id: number;
+  from_user_name: string;
+  deal_id: number | null;
+  client_id: number | null;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 const navItems = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager'] },
@@ -60,6 +71,7 @@ export default function Sidebar() {
 
   // Notifications state
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [mentions, setMentions] = useState<MentionNotification[]>([]);
   const [showPanel, setShowPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +111,39 @@ export default function Sidebar() {
     return () => clearInterval(interval);
   }, [userRole, userId]);
 
+  // Fetch mention notifications
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchMentions = () => {
+      fetch(`/api/mentions?user_id=${userId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setMentions(data);
+        })
+        .catch(() => {});
+    };
+
+    fetchMentions();
+    const interval = setInterval(fetchMentions, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  const handleMarkMentionRead = async (mentionId: number) => {
+    try {
+      await fetch('/api/mentions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: mentionId }),
+      });
+      setMentions((prev) => prev.filter((m) => m.id !== mentionId));
+    } catch {
+      // ignore
+    }
+  };
+
+  const totalBadgeCount = notifications.length + mentions.length;
+
   // Close panel on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -132,9 +177,9 @@ export default function Sidebar() {
               <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              {notifications.length > 0 && (
+              {totalBadgeCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4.5 h-4.5 min-w-[18px] min-h-[18px] flex items-center justify-center">
-                  {notifications.length}
+                  {totalBadgeCount}
                 </span>
               )}
             </button>
@@ -144,7 +189,7 @@ export default function Sidebar() {
               <div className="fixed left-64 top-4 w-80 bg-white rounded-xl shadow-2xl z-50 max-h-[400px] flex flex-col">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <span className="text-sm font-semibold text-gray-900">
-                    Уведомления ({notifications.length})
+                    Уведомления ({totalBadgeCount})
                   </span>
                   <button
                     onClick={() => setShowPanel(false)}
@@ -154,11 +199,59 @@ export default function Sidebar() {
                   </button>
                 </div>
                 <div className="overflow-y-auto flex-1">
-                  {notifications.length === 0 ? (
+                  {/* Mentions section */}
+                  {mentions.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 bg-blue-50 text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                        Упоминания ({mentions.length})
+                      </div>
+                      {mentions.map((m) => (
+                        <button
+                          key={`mention-${m.id}`}
+                          onClick={() => {
+                            handleMarkMentionRead(m.id);
+                            setShowPanel(false);
+                            if (m.client_id) {
+                              router.push(`/clients/${m.client_id}`);
+                            } else if (m.deal_id) {
+                              router.push(`/deals/${m.deal_id}`);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                @{m.from_user_name} упомянул вас
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {m.message}
+                              </div>
+                              <div className="text-xs text-blue-500 mt-0.5">
+                                {new Date(m.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {notifications.length === 0 && mentions.length === 0 && (
                     <div className="p-4 text-sm text-gray-500 text-center">
                       Нет уведомлений
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Overdue tasks section header */}
+                  {notifications.length > 0 && mentions.length > 0 && (
+                    <div className="px-4 py-2 bg-orange-50 text-xs font-semibold text-orange-700 uppercase tracking-wide">
+                      Просроченные ({notifications.length})
+                    </div>
+                  )}
+                  {notifications.length > 0 ? (
                     notifications.map((n) => {
                       const label = getNotificationLabel(n.days_overdue);
                       const dotColor = getNotificationDot(n.days_overdue);
