@@ -38,7 +38,7 @@ export interface Client {
   updated_at: string;
 }
 
-export type ProductType = 'steklopaket' | 'krovlya' | 'dver' | 'pol' | 'zenitniy_fonar' | 'mansardnoe_okno' | 'zimniy_sad' | 'carbon_glass' | 'other';
+export type ProductType = 'steklopaket' | 'otoplenie' | 'krovlya' | 'dver' | 'pol' | 'zenitniy_fonar' | 'mansardnoe_okno' | 'zimniy_sad' | 'carbon_glass' | 'other';
 
 export type OrderStatus = 'new' | 'contacted' | 'measurement' | 'sent_to_factory' | 'calculation' | 'approved' | 'paid' | 'factory' | 'delivery' | 'installation' | 'completed' | 'cancelled';
 
@@ -74,6 +74,7 @@ export interface OrderHistory {
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   steklopaket: 'Стеклопакет с электрообогревом',
+  otoplenie: 'Отопление',
   krovlya: 'Стеклянная кровля',
   dver: 'Дверь с обогреваемым стеклом',
   pol: 'Стеклянный пол',
@@ -125,6 +126,7 @@ export const LOSS_REASON_LABELS: Record<string, string> = {
 };
 
 export const PAIN_CATEGORIES: Record<string, string> = {
+  heating: 'Отопление / нет отопления',
   cold_windows: 'Холодные окна / промерзание',
   condensation: 'Конденсат на стёклах',
   high_heating: 'Высокие счета за отопление',
