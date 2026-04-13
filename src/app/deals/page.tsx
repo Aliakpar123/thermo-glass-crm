@@ -1041,17 +1041,29 @@ export default function DealsPage() {
           >
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
-                {PIPELINE_STAGES.map((status) => (
-                  <DroppableColumn
-                    key={status}
-                    status={status}
-                    deals={getDealsByStatus(status)}
-                    onAddDeal={status === 'new' ? () => setShowAddModal(true) : undefined}
-                    canDrag={canDragDeal}
-                    userRole={userRole}
-                    onTransfer={handleTransfer}
-                  />
-                ))}
+                {(() => {
+                  // Filter columns by role when "Мои сделки" is active
+                  const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted', 'measurement'];
+                  const ORDER_MANAGER_STAGES: OrderStatus[] = ['calculation', 'approved', 'invoiced', 'paid', 'factory', 'production', 'delivery', 'installation', 'completed'];
+
+                  let stages = PIPELINE_STAGES;
+                  if (showMyDeals && !isAdmin) {
+                    if (userRole === 'client_manager') stages = CLIENT_MANAGER_STAGES;
+                    else if (userRole === 'order_manager') stages = ORDER_MANAGER_STAGES;
+                  }
+
+                  return stages.map((status) => (
+                    <DroppableColumn
+                      key={status}
+                      status={status}
+                      deals={getDealsByStatus(status)}
+                      onAddDeal={status === 'new' ? () => setShowAddModal(true) : undefined}
+                      canDrag={canDragDeal}
+                      userRole={userRole}
+                      onTransfer={handleTransfer}
+                    />
+                  ));
+                })()}
               </div>
             </div>
 
