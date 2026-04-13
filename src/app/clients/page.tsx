@@ -224,7 +224,7 @@ export default function ClientsPage() {
                             <button
                               onClick={() => handleCreateDeal(client)}
                               disabled={sendingId === client.id}
-                              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 whitespace-nowrap"
+                              className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 whitespace-nowrap"
                             >
                               {sendingId === client.id ? 'Создание...' : '→ В сделки'}
                             </button>
