@@ -90,7 +90,8 @@ export default function LoginPage() {
 
         <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
           <p className="font-medium mb-1">Аккаунты:</p>
-          <p>Админ: admin@thermoglass.kz / admin123</p>
+          <p>Алиакбар: admin@thermoglass.kz / admin123</p>
+          <p>Нуртай: nurtay@thermoglass.kz / manager123</p>
           <p>Алиакпар: aliakpar@thermoglass.kz / manager123</p>
           <p>Камилла: kamilla@thermoglass.kz / manager123</p>
           <p>Айжан: aizhan@thermoglass.kz / manager123</p>

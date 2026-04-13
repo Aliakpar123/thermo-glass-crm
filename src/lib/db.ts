@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v7_aliakpar_marzhan'; // bump to force re-init
+const DB_VERSION = 'v8_nurtay_aliakbar'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -201,6 +201,18 @@ async function initDb() {
     if (marzhan.length === 0) {
       const h = bcrypt.hashSync('manager123', 10);
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Маржан', 'marzhan@thermoglass.kz', ${h}, 'accountant')`;
+    }
+
+    // Rename Администратор → Алиакбар
+    await sql`UPDATE users SET name = 'Алиакбар' WHERE email = 'admin@thermoglass.kz' AND name = 'Администратор'`;
+
+    // Rename Алиакпар → Алиакпар (keep as is, he is separate admin)
+
+    // Migration: add Нуртай if not exists
+    const nurtay = await sql`SELECT id FROM users WHERE email = 'nurtay@thermoglass.kz'`;
+    if (nurtay.length === 0) {
+      const h = bcrypt.hashSync('manager123', 10);
+      await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Нуртай', 'nurtay@thermoglass.kz', ${h}, 'admin')`;
     }
   } catch (e) {
     console.error('DB init error:', e);
