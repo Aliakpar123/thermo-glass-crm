@@ -121,6 +121,15 @@ export async function PUT(
           WHERE id = ${Number(id)}
         `;
       }
+
+      // Auto-assign manager based on stage
+      // delivery, installation, completed → assign to delivery_manager (Евгений)
+      if (['delivery', 'installation', 'completed'].includes(status)) {
+        const deliveryMgr = await sql`SELECT id FROM users WHERE role = 'delivery_manager' LIMIT 1`;
+        if (deliveryMgr.length > 0) {
+          await sql`UPDATE orders SET manager_id = ${deliveryMgr[0].id} WHERE id = ${Number(id)}`;
+        }
+      }
     }
 
     const updated = await sql`

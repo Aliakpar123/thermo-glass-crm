@@ -757,19 +757,29 @@ export default function DealsPage() {
 
   useEffect(() => {
     fetchDeals();
+    // Auto-refresh every 15 seconds
+    const interval = setInterval(() => {
+      fetchDeals();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Fetch overdue notifications
+  // Fetch overdue notifications + auto-refresh
   useEffect(() => {
-    const nUserId = (session?.user as { id?: string })?.id || '';
-    const nUserRole = (session?.user as { role?: string })?.role || '';
-    const params = nUserRole !== 'admin' && nUserId ? `?manager_id=${nUserId}` : '';
-    fetch(`/api/notifications${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setOverdueNotifications(data);
-      })
-      .catch(() => {});
+    function fetchNotifications() {
+      const nUserId = (session?.user as { id?: string })?.id || '';
+      const nUserRole = (session?.user as { role?: string })?.role || '';
+      const params = nUserRole !== 'admin' && nUserId ? `?manager_id=${nUserId}` : '';
+      fetch(`/api/notifications${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setOverdueNotifications(data);
+        })
+        .catch(() => {});
+    }
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
   }, [session]);
 
   function fetchDeals() {
