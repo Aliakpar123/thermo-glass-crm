@@ -32,7 +32,7 @@ const navItems = [
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
-  { href: '/marketing/wiki', label: 'Wiki', icon: '📖', roles: ['admin'] },
+  { href: '/marketing/wiki', label: 'Wiki Маркетинг', icon: '📖', roles: ['admin'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
   { href: '/finance', label: 'Финансы', icon: '💰', roles: ['admin', 'accountant'] },
   { href: '/semmar', label: 'Semmar', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
