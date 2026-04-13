@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #fafbfc;
+  --bg-primary: #f5f5f7;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f3f4f6;
+  --bg-tertiary: #eeeef0;
   --bg-sidebar: #111214;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --border: #e5e7eb;
-  --border-subtle: #f0f1f3;
+  --text-primary: #1a1a1e;
+  --text-secondary: #5c5c66;
+  --text-tertiary: #8e8e99;
+  --border: rgba(0,0,0,0.08);
+  --border-subtle: rgba(0,0,0,0.04);
   --accent: #22c55e;
   --accent-hover: #16a34a;
   --accent-light: #dcfce7;
   --primary: #22c55e;
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --card-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
   --card-radius: 16px;
 }
 
@@ -62,6 +62,38 @@ input, select, textarea {
   background: var(--bg-secondary);
   border-color: var(--border);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ============= LIGHT MODE — HubSpot style ============= */
+
+/* Cards with subtle border + shadow glow */
+.bg-white {
+  box-shadow: var(--card-shadow);
+  border-radius: var(--card-radius);
+}
+
+.rounded-xl {
+  border-radius: var(--card-radius) !important;
+}
+
+.rounded-lg {
+  border-radius: 12px !important;
+}
+
+/* Subtle borders everywhere */
+.border-gray-100, .border-gray-200, .border-gray-300 {
+  border-color: var(--border) !important;
+}
+
+/* Light mode inputs — clean with green focus */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.1) !important;
+}
+
+/* Table rows — subtle hover */
+tbody tr:hover {
+  background-color: var(--bg-tertiary) !important;
 }
 
 /* Thin scrollbar */
