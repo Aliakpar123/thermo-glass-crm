@@ -320,7 +320,7 @@ function DroppableColumn({
   const totalAmount = deals.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
-    <div className="flex-1 min-w-[140px] bg-gray-50 rounded-xl p-2 flex flex-col transition-all duration-200">
+    <div className="min-w-[220px] max-w-[260px] bg-gray-50 rounded-xl p-3 flex flex-col shrink-0 transition-all duration-200">
       {/* Column header with gradient */}
       <div
         className="rounded-t-lg -mt-3 -mx-3 px-3 pt-3 mb-2"
@@ -330,11 +330,11 @@ function DroppableColumn({
         }}
       >
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xs font-semibold text-gray-900 truncate">
+          <h3 className="text-sm font-semibold text-gray-900">
             {ORDER_STATUS_LABELS[status]}
           </h3>
           <span
-            className="text-[10px] font-bold text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0"
+            className="text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center shrink-0"
             style={{ backgroundColor: colorHex }}
           >
             {deals.length}
@@ -397,7 +397,7 @@ function OverlayCard({ deal }: { deal: Deal }) {
 
   return (
     <div
-      className={`bg-white rounded-xl p-2 border-l-4 ${CARD_BORDER_COLORS[status]} w-[200px] opacity-90 rotate-1`}
+      className={`bg-white rounded-xl p-3 border-l-4 ${CARD_BORDER_COLORS[status]} w-[230px] opacity-90 rotate-1`}
       style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.2)', transform: 'scale(1.05) rotate(1deg)' }}
     >
       <div className="flex items-center gap-1.5">
@@ -1046,7 +1046,7 @@ export default function DealsPage() {
             onDragEnd={handleDragEnd}
           >
             <div className="overflow-x-auto pb-4">
-              <div className="flex gap-2" style={{ minWidth: '100%' }}>
+              <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
                 {(() => {
                   // Filter columns by role when "Мои сделки" is active
                   const CLIENT_MANAGER_STAGES: OrderStatus[] = ['new', 'contacted'];
