@@ -35,6 +35,7 @@ interface ContentData {
 }
 
 const TABS = [
+  { id: 'ai', label: 'AI Ассистент', icon: '🤖' },
   { id: 'instagram', label: 'Instagram', icon: '📸' },
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
   { id: 'faq', label: 'FAQ', icon: '❓' },
@@ -65,8 +66,39 @@ const TYPE_BADGES: Record<string, string> = {
 export default function MarketingContentPage() {
   const [data, setData] = useState<ContentData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('instagram');
+  const [activeTab, setActiveTab] = useState('ai');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // AI generation
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiType, setAiType] = useState('instagram');
+  const [aiResult, setAiResult] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiHistory, setAiHistory] = useState<{prompt: string; type: string; text: string}[]>([]);
+
+  const generateAI = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    setAiResult('');
+    try {
+      const res = await fetch('/api/marketing/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt, type: aiType }),
+      });
+      const d = await res.json();
+      if (d.text) {
+        setAiResult(d.text);
+        setAiHistory(prev => [{ prompt: aiPrompt, type: aiType, text: d.text }, ...prev.slice(0, 9)]);
+      } else {
+        setAiResult('Ошибка: ' + (d.error || 'Неизвестная ошибка'));
+      }
+    } catch {
+      setAiResult('Ошибка соединения');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/marketing/content')
@@ -217,6 +249,111 @@ export default function MarketingContentPage() {
           </div>
 
           <div className="p-6">
+            {/* AI Assistant Tab */}
+            {activeTab === 'ai' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-5 border border-blue-100">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">🤖 AI Маркетинг-ассистент</h3>
+                  <p className="text-sm text-gray-600 mb-4">Генерирует уникальный контент на основе данных CRM. Каждый раз новый текст.</p>
+
+                  <div className="flex gap-2 mb-3 flex-wrap">
+                    {[
+                      { id: 'instagram', label: '📸 Instagram пост' },
+                      { id: 'whatsapp', label: '💬 WhatsApp рассылка' },
+                      { id: 'faq', label: '❓ FAQ для сайта' },
+                      { id: 'reels', label: '🎬 Идея для Reels' },
+                      { id: 'custom', label: '✏️ Свободный запрос' },
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setAiType(t.id)}
+                        className={`px-3 py-1.5 text-xs rounded-full font-medium transition ${aiType === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && generateAI()}
+                      placeholder={aiType === 'custom' ? 'Задайте любой вопрос по маркетингу...' : 'Тема: отопление для ресторанов в Астане'}
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      onClick={generateAI}
+                      disabled={aiLoading || !aiPrompt.trim()}
+                      className="px-6 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium whitespace-nowrap"
+                    >
+                      {aiLoading ? '⏳ Генерация...' : '🚀 Сгенерировать'}
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <span className="text-xs text-gray-400">Быстрые темы:</span>
+                    {['Отопление зимой', 'Утепление балкона', 'Акция для новых клиентов', 'Кейс клиента из Астаны', 'Сравнение с конкурентами'].map(q => (
+                      <button
+                        key={q}
+                        onClick={() => { setAiPrompt(q); }}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {aiResult && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-900">Результат</span>
+                      <button
+                        onClick={() => copyToClipboard(aiResult, 'ai-result')}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {copiedId === 'ai-result' ? '✅ Скопировано!' : '📋 Скопировать'}
+                      </button>
+                    </div>
+                    <div className="whitespace-pre-wrap text-sm text-gray-900 leading-relaxed bg-gray-50 rounded-lg p-4">
+                      {aiResult}
+                    </div>
+                    <button
+                      onClick={generateAI}
+                      disabled={aiLoading}
+                      className="mt-3 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      🔄 Сгенерировать другой вариант
+                    </button>
+                  </div>
+                )}
+
+                {aiHistory.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">История генераций</h4>
+                    <div className="space-y-3">
+                      {aiHistory.map((h, i) => (
+                        <div key={i} className="bg-white rounded-lg border border-gray-100 p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-gray-500">{h.type === 'instagram' ? '📸' : h.type === 'whatsapp' ? '💬' : h.type === 'faq' ? '❓' : h.type === 'reels' ? '🎬' : '✏️'} {h.prompt}</span>
+                            <button
+                              onClick={() => copyToClipboard(h.text, `history-${i}`)}
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              {copiedId === `history-${i}` ? '✅' : '📋'}
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-900 whitespace-pre-wrap line-clamp-3">{h.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Instagram Tab */}
             {activeTab === 'instagram' && (
               <div className="space-y-5">
