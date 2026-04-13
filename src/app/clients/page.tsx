@@ -86,25 +86,22 @@ export default function ClientsPage() {
     }
   };
 
-  // Камилла нажимает "Передать в Отдел Заявки" — создаёт lead из клиента
-  const handleSendToOrders = async (client: Client) => {
+  // Камилла нажимает "→ В сделки" — создаёт сделку и переходит на канбан
+  const handleCreateDeal = async (client: Client) => {
     setSendingId(client.id);
     try {
-      const res = await fetch('/api/leads', {
+      const res = await fetch('/api/deals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: client.name,
-          phone: client.phone,
-          source: client.source,
-          message: `Клиент от ${client.source}. ${client.notes || ''}`.trim(),
-          client_id: client.id,
+          existing_client_id: client.id,
+          manager_id: userId ? Number(userId) : 1,
+          comment: client.notes || '',
         }),
       });
       if (res.ok) {
-        setSuccessId(client.id);
-        fetchClients();
-        setTimeout(() => setSuccessId(null), 3000);
+        // Redirect to deals kanban
+        window.location.href = '/deals';
       }
     } finally {
       setSendingId(null);
@@ -225,11 +222,11 @@ export default function ClientsPage() {
                             <span className="text-green-600 text-xs font-medium">Передано!</span>
                           ) : (
                             <button
-                              onClick={() => handleSendToOrders(client)}
+                              onClick={() => handleCreateDeal(client)}
                               disabled={sendingId === client.id}
-                              className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 whitespace-nowrap"
+                              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 whitespace-nowrap"
                             >
-                              {sendingId === client.id ? 'Отправка...' : 'Передать в Отдел Заявки'}
+                              {sendingId === client.id ? 'Создание...' : '→ В сделки'}
                             </button>
                           )}
                         </td>
