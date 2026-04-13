@@ -138,7 +138,7 @@ export default function FinancePage() {
             </Link>
             <button
               onClick={() => setShowExpModal(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
             >
               + Добавить расход
             </button>
@@ -350,7 +350,7 @@ export default function FinancePage() {
               <button
                 onClick={handleAddExpense}
                 disabled={saving || !expDescription || !expAmount}
-                className="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full px-4 py-2.5 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50"
               >
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>

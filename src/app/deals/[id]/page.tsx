@@ -677,7 +677,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                       disabled={saving}
                       className={`
                         px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap
-                        ${isActive ? 'bg-blue-600 text-white shadow-sm' : ''}
+                        ${isActive ? 'bg-[#22c55e] text-white shadow-sm' : ''}
                         ${isPast ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
                         ${isFuture ? 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600' : ''}
                         ${isActive ? '' : 'cursor-pointer'}
@@ -758,7 +758,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   <div>
                     {/* Comment input */}
                     <div className="flex gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#22c55e] flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
                         {avatarLetter(session?.user?.name || '')}
                       </div>
                       <div className="flex-1">
@@ -768,7 +768,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                             onChange={handleCommentChange}
                             placeholder="Написать комментарий... Используйте @ для упоминания"
                             rows={2}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder:text-gray-400"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] focus:border-transparent resize-none placeholder:text-gray-400"
                           />
                           {showMentionDropdown && (
                             <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-64 max-h-48 overflow-y-auto">
@@ -798,7 +798,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                           <button
                             onClick={handleSendComment}
                             disabled={!commentText.trim() || sendingComment}
-                            className="px-4 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                            className="px-4 py-1.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                           >
                             {sendingComment ? 'Отправка...' : 'Отправить'}
                           </button>
@@ -945,7 +945,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                         <p className="text-gray-400 text-sm mb-4">Заявка на расчёт ещё не заполнена</p>
                         <Link
                           href={`/orders/calculation?order_id=${order.id}&client_id=${order.client_id}&client_name=${encodeURIComponent(order.client_name || '')}&client_phone=${encodeURIComponent((order as unknown as Record<string, unknown>).client_phone as string || '')}`}
-                          className="inline-flex items-center px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                          className="inline-flex items-center px-5 py-2 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
                         >
                           Заполнить заявку на расчёт
                         </Link>
@@ -1003,12 +1003,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendChatMessage(); } }}
                         placeholder="Написать сообщение..."
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] placeholder:text-gray-400"
                       />
                       <button
                         onClick={handleSendChatMessage}
                         disabled={!chatInput.trim() || sendingChat}
-                        className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                        className="px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                       >
                         {sendingChat ? '...' : 'Отправить'}
                       </button>
@@ -1039,7 +1039,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   <button
                     onClick={handleSaveNextAction}
                     disabled={savingAction}
-                    className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                    className="w-full px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                   >
                     {savingAction ? 'Сохранение...' : 'Сохранить напоминание'}
                   </button>
@@ -1121,7 +1121,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 <button
                   onClick={handleSavePain}
                   disabled={savingPain || selectedPains.length === 0}
-                  className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                  className="w-full px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                 >
                   {savingPain ? 'Сохранение...' : 'Сохранить боли'}
                 </button>
@@ -1404,7 +1404,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   >
                     {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
@@ -1415,7 +1415,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                       type="text"
                       value={factoryOrderNumber}
                       onChange={(e) => setFactoryOrderNumber(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                       placeholder="Номер заказа на заводе"
                     />
                   )}
@@ -1423,13 +1423,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     rows={2}
                     value={statusComment}
                     onChange={(e) => setStatusComment(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] resize-none placeholder:text-gray-400"
                     placeholder="Комментарий..."
                   />
                   <button
                     type="submit"
                     disabled={saving || newStatus === order.status}
-                    className="w-full px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                    className="w-full px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                   >
                     {saving ? 'Сохранение...' : 'Изменить'}
                   </button>
@@ -1461,7 +1461,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   value={pasteSenderName}
                   onChange={(e) => setPasteSenderName(e.target.value)}
                   placeholder={session?.user?.name || 'Камилла'}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] placeholder:text-gray-400"
                 />
               </div>
               <textarea
@@ -1469,7 +1469,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 onChange={(e) => setPasteText(e.target.value)}
                 placeholder="Вставьте переписку здесь..."
                 rows={10}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400 mb-4"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] resize-none placeholder:text-gray-400 mb-4"
               />
               <div className="flex justify-end gap-3">
                 <button
@@ -1524,7 +1524,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     value={lossReasonOther}
                     onChange={(e) => setLossReasonOther(e.target.value)}
                     placeholder="Укажите причину..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] mt-1"
                   />
                 )}
               </div>

@@ -32,11 +32,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fafbfc] to-[#eef0ff] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 w-full max-w-sm animate-fadeIn">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
+      <div className="rounded-2xl shadow-lg border p-8 w-full max-w-sm animate-fadeIn" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-[#5e6ad2] rounded-xl flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 bg-[#22c55e] rounded-xl flex items-center justify-center shadow-sm">
               <span className="text-white text-lg font-semibold tracking-tight">TG</span>
             </div>
           </div>
@@ -59,7 +59,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
               placeholder="admin@thermoglass.kz"
               required
             />
@@ -73,7 +73,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
               placeholder="Введите пароль"
               required
             />
@@ -82,13 +82,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#5e6ad2] text-white py-2.5 rounded-lg hover:bg-[#4f5bc0] transition-all duration-150 font-medium text-sm disabled:opacity-50 shadow-sm"
+            className="w-full bg-[#22c55e] text-white py-2.5 rounded-lg hover:bg-[#16a34a] transition-all duration-150 font-medium text-sm disabled:opacity-50 shadow-sm"
           >
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
-        <div className="mt-6 p-3.5 bg-gray-50/70 rounded-lg text-[12px] text-gray-400 border border-gray-100">
+        <div className="mt-6 p-3.5 rounded-lg text-[12px] text-gray-400 border" style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border)' }}>
           <p className="font-medium text-gray-500 mb-1 text-[11px] uppercase tracking-wide">Аккаунты</p>
           <p>Алиакбар: admin@thermoglass.kz / admin123</p>
           <p>Нуртай: nurtay@thermoglass.kz / manager123</p>

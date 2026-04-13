@@ -122,7 +122,7 @@ export default function ClientsPage() {
             </a>
             <button
               onClick={() => setShowModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="bg-[#22c55e] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#16a34a] transition"
             >
               + Новый клиент
             </button>
@@ -142,12 +142,12 @@ export default function ClientsPage() {
               placeholder="Поиск по имени или телефону..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-80 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="w-full sm:w-80 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
             />
             <select
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
             >
               <option value="">Все города</option>
               {uniqueCities.map((city) => (
@@ -157,7 +157,7 @@ export default function ClientsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'transferred')}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
             >
               <option value="all">Все</option>
               <option value="active">Активные</option>
@@ -266,7 +266,7 @@ export default function ClientsPage() {
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                     placeholder="ФИО клиента"
                   />
                 </div>
@@ -277,7 +277,7 @@ export default function ClientsPage() {
                     required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                     placeholder="+7 777 123 45 67"
                   />
                 </div>
@@ -287,7 +287,7 @@ export default function ClientsPage() {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -297,7 +297,7 @@ export default function ClientsPage() {
                       type="text"
                       value={form.city}
                       onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                     />
                   </div>
                   <div>
@@ -305,7 +305,7 @@ export default function ClientsPage() {
                     <select
                       value={form.source}
                       onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                     >
                       {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
                         <option key={key} value={key}>
@@ -321,7 +321,7 @@ export default function ClientsPage() {
                     type="text"
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                   />
                 </div>
                 <div>
@@ -330,7 +330,7 @@ export default function ClientsPage() {
                     rows={3}
                     value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                     placeholder="Что хочет клиент, откуда написал..."
                   />
                 </div>
@@ -345,7 +345,7 @@ export default function ClientsPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                    className="px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
                   >
                     {saving ? 'Сохранение...' : 'Сохранить клиента'}
                   </button>

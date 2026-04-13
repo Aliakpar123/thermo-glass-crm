@@ -267,7 +267,7 @@ export default function MarketingContentPage() {
                       <button
                         key={t.id}
                         onClick={() => setAiType(t.id)}
-                        className={`px-3 py-1.5 text-xs rounded-full font-medium transition ${aiType === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                        className={`px-3 py-1.5 text-xs rounded-full font-medium transition ${aiType === t.id ? 'bg-[#22c55e] text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
                       >
                         {t.label}
                       </button>
@@ -281,12 +281,12 @@ export default function MarketingContentPage() {
                       onChange={(e) => setAiPrompt(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && generateAI()}
                       placeholder={aiType === 'custom' ? 'Задайте любой вопрос по маркетингу...' : 'Тема: отопление для ресторанов в Астане'}
-                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                     />
                     <button
                       onClick={generateAI}
                       disabled={aiLoading || !aiPrompt.trim()}
-                      className="px-6 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium whitespace-nowrap"
+                      className="px-6 py-2.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium whitespace-nowrap"
                     >
                       {aiLoading ? '⏳ Генерация...' : '🚀 Сгенерировать'}
                     </button>

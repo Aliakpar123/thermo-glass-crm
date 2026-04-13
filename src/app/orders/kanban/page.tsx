@@ -367,7 +367,7 @@ export default function KanbanPage() {
             </a>
             <Link
               href="/orders/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="bg-[#22c55e] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#16a34a] transition"
             >
               Новый заказ
             </Link>

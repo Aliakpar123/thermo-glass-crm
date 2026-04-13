@@ -86,7 +86,7 @@ export default function MarketingPage() {
               onClick={() => setPeriod(p.key)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 period === p.key
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#22c55e] text-white'
                   : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}
             >

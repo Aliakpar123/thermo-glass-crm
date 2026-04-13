@@ -80,7 +80,7 @@ function NewOrderForm() {
                 required
                 value={form.client_id}
                 onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
               >
                 <option value="">Выберите клиента</option>
                 {clients.map((c) => (
@@ -97,7 +97,7 @@ function NewOrderForm() {
                 required
                 value={form.product_type}
                 onChange={(e) => setForm({ ...form, product_type: e.target.value as ProductType })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
               >
                 {Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -113,7 +113,7 @@ function NewOrderForm() {
                 rows={3}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                 placeholder="Детали заказа, особые требования..."
               />
             </div>
@@ -125,7 +125,7 @@ function NewOrderForm() {
                   type="text"
                   value={form.dimensions}
                   onChange={(e) => setForm({ ...form, dimensions: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   placeholder="Например: 1200x800 мм"
                 />
               </div>
@@ -136,7 +136,7 @@ function NewOrderForm() {
                   min={1}
                   value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                 />
               </div>
             </div>
@@ -150,7 +150,7 @@ function NewOrderForm() {
                   min={0}
                   value={form.amount || ''}
                   onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                 />
               </div>
               <div>
@@ -160,7 +160,7 @@ function NewOrderForm() {
                   min={0}
                   value={form.prepayment || ''}
                   onChange={(e) => setForm({ ...form, prepayment: Number(e.target.value) })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                 />
               </div>
             </div>
@@ -169,7 +169,7 @@ function NewOrderForm() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                className="px-6 py-2.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
               >
                 {saving ? 'Создание...' : 'Создать заказ'}
               </button>

@@ -212,7 +212,7 @@ function DealCard({
         />
         <Link
           href={`/deals/${deal.id}`}
-          className="text-[13px] font-semibold text-gray-900 hover:text-[#5e6ad2] truncate flex-1"
+          className="text-[13px] font-semibold text-gray-900 hover:text-[#22c55e] truncate flex-1"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -279,7 +279,7 @@ function DealCard({
       {canDrag && ['new', 'contacted', 'measurement'].includes(status) && userRole === 'client_manager' && (
         <button
           onClick={(e) => { e.stopPropagation(); onTransfer(deal.id); }}
-          className="mt-1 w-full text-[11px] text-[#5e6ad2] bg-[#eef0ff] rounded-md py-1 hover:bg-[#e0e3ff] transition-all duration-150 font-medium"
+          className="mt-1 w-full text-[11px] text-[#22c55e] bg-[#dcfce7] rounded-md py-1 hover:bg-[#bbf7d0] transition-all duration-150 font-medium"
           onPointerDown={(e) => e.stopPropagation()}
         >
           {'→'} Передать в работу
@@ -376,7 +376,7 @@ function DroppableColumn({
         {onAddDeal && (
           <button
             onClick={onAddDeal}
-            className="w-full mt-2 py-2 border border-dashed border-[#5e6ad2]/30 rounded-lg text-[12px] text-[#5e6ad2] hover:bg-[#eef0ff] hover:border-[#5e6ad2]/50 transition-all duration-150 font-medium"
+            className="w-full mt-2 py-2 border border-dashed border-[#22c55e]/30 rounded-lg text-[12px] text-[#22c55e] hover:bg-[#dcfce7] hover:border-[#22c55e]/50 transition-all duration-150 font-medium"
           >
             + Новая сделка
           </button>
@@ -551,7 +551,7 @@ function QuickAddModal({
                 type="button"
                 onClick={() => createDealForClient(duplicateInfo.id)}
                 disabled={saving}
-                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-[#5e6ad2] rounded-lg hover:bg-[#4f5bc0] transition disabled:opacity-50"
+                className="flex-1 px-3 py-2 text-xs font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50"
               >
                 Создать новую сделку для этого клиента
               </button>
@@ -575,7 +575,7 @@ function QuickAddModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="Аслан"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
             />
           </div>
           <div>
@@ -586,7 +586,7 @@ function QuickAddModal({
               onChange={(e) => setPhone(formatPhone(e.target.value))}
               placeholder="+7 777 123 45 67"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -597,7 +597,7 @@ function QuickAddModal({
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Астана"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               />
             </div>
             <div>
@@ -605,7 +605,7 @@ function QuickAddModal({
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as LeadSource)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               >
                 {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
@@ -619,7 +619,7 @@ function QuickAddModal({
               <select
                 value={productType}
                 onChange={(e) => setProductType(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               >
                 {Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
@@ -633,7 +633,7 @@ function QuickAddModal({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               />
             </div>
           </div>
@@ -644,7 +644,7 @@ function QuickAddModal({
               onChange={(e) => setComment(e.target.value)}
               rows={2}
               placeholder="Что хочет клиент, откуда написал..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
             />
           </div>
           <div>
@@ -652,7 +652,7 @@ function QuickAddModal({
             <select
               value={clientPain}
               onChange={(e) => setClientPain(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
             >
               <option value="">Не указана</option>
               {Object.entries(PAIN_CATEGORIES).map(([key, label]) => (
@@ -664,7 +664,7 @@ function QuickAddModal({
             <button
               type="submit"
               disabled={saving || !name.trim() || !phone.trim()}
-              className="flex-1 px-4 py-2.5 text-sm text-white bg-[#5e6ad2] rounded-lg hover:bg-[#4f5bc0] transition disabled:opacity-50 font-medium"
+              className="flex-1 px-4 py-2.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
             >
               {saving ? 'Создание...' : 'Создать сделку'}
             </button>
@@ -938,7 +938,7 @@ export default function DealsPage() {
               </span>
               <button
                 onClick={() => setShowAllNotifications(!showAllNotifications)}
-                className="text-[#5e6ad2] hover:text-[#4f5bc0] font-medium whitespace-nowrap ml-1 text-[13px]"
+                className="text-[#22c55e] hover:text-[#16a34a] font-medium whitespace-nowrap ml-1 text-[13px]"
               >
                 {showAllNotifications ? 'Скрыть' : 'Показать все'}
               </button>
@@ -990,7 +990,7 @@ export default function DealsPage() {
                 onClick={() => setShowMyDeals(true)}
                 className={`px-3 py-1.5 text-[13px] font-medium transition-all duration-150 ${
                   showMyDeals
-                    ? 'bg-[#5e6ad2] text-white'
+                    ? 'bg-[#22c55e] text-white'
                     : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
@@ -1000,7 +1000,7 @@ export default function DealsPage() {
                 onClick={() => setShowMyDeals(false)}
                 className={`px-3 py-1.5 text-[13px] font-medium transition-all duration-150 ${
                   !showMyDeals
-                    ? 'bg-[#5e6ad2] text-white'
+                    ? 'bg-[#22c55e] text-white'
                     : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
@@ -1013,7 +1013,7 @@ export default function DealsPage() {
                 placeholder="Поиск по имени или телефону..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#5e6ad2]/20 focus:border-[#5e6ad2] pr-8 shadow-sm transition-all duration-150 placeholder:text-gray-300"
+                className="w-64 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] pr-8 shadow-sm transition-all duration-150 placeholder:text-gray-300"
               />
               {searchQuery && (
                 <button
@@ -1027,7 +1027,7 @@ export default function DealsPage() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="bg-[#5e6ad2] text-white px-4 py-1.5 rounded-lg text-[13px] font-medium hover:bg-[#4f5bc0] transition-all duration-150 shadow-sm"
+              className="bg-[#22c55e] text-white px-4 py-1.5 rounded-lg text-[13px] font-medium hover:bg-[#16a34a] transition-all duration-150 shadow-sm"
             >
               + Сделка
             </button>

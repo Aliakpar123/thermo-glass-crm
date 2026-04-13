@@ -53,7 +53,7 @@ export default function ProfilePage() {
         {/* Profile card */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+            <div className="w-16 h-16 rounded-full bg-[#22c55e] flex items-center justify-center text-white text-2xl font-bold">
               {user?.name?.charAt(0) || '?'}
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 placeholder="Минимум 4 символа"
               />
             </div>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 placeholder="Повторите пароль"
               />
             </div>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+              className="px-6 py-2.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
             >
               {saving ? 'Сохранение...' : 'Сменить пароль'}
             </button>

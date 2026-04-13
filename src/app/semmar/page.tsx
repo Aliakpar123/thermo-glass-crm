@@ -102,7 +102,7 @@ export default function SemmarPage() {
             href={`https://drive.google.com/drive/folders/${currentFolder}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            className="px-4 py-2 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
           >
             Открыть в Google Drive
           </a>
@@ -138,7 +138,7 @@ export default function SemmarPage() {
                 href={`https://drive.google.com/drive/folders/${GOOGLE_DRIVE_FOLDER_ID}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition inline-block"
+                className="px-6 py-3 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition inline-block"
               >
                 Открыть в Google Drive
               </a>

@@ -105,7 +105,7 @@ export default function LeadsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Заявки</h1>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            className="bg-[#22c55e] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#16a34a] transition"
           >
             Добавить заявку
           </button>
@@ -119,7 +119,7 @@ export default function LeadsPage() {
               onClick={() => setStatusFilter(tab.key)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 statusFilter === tab.key
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#22c55e] text-white'
                   : 'bg-white text-gray-900 border border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -189,7 +189,7 @@ export default function LeadsPage() {
                             <>
                               <button
                                 onClick={() => handleCalculation(lead as Lead & { client_id?: number })}
-                                className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                                className="px-2.5 py-1 text-xs font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
                               >
                                 Оформить заявку
                               </button>
@@ -250,7 +250,7 @@ export default function LeadsPage() {
                     value={lossReasonOther}
                     onChange={(e) => setLossReasonOther(e.target.value)}
                     placeholder="Укажите причину..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] mt-1"
                   />
                 )}
               </div>
@@ -295,7 +295,7 @@ export default function LeadsPage() {
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   />
                 </div>
                 <div>
@@ -305,7 +305,7 @@ export default function LeadsPage() {
                     required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   />
                 </div>
                 <div>
@@ -313,7 +313,7 @@ export default function LeadsPage() {
                   <select
                     value={form.source}
                     onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   >
                     {Object.entries(LEAD_SOURCE_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -328,7 +328,7 @@ export default function LeadsPage() {
                     rows={3}
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
@@ -342,7 +342,7 @@ export default function LeadsPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                    className="px-4 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50"
                   >
                     {saving ? 'Сохранение...' : 'Сохранить'}
                   </button>

@@ -189,7 +189,7 @@ export default function OrderDetailPage() {
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   >
                     {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -207,7 +207,7 @@ export default function OrderDetailPage() {
                       type="text"
                       value={factoryOrderNumber}
                       onChange={(e) => setFactoryOrderNumber(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                       placeholder="Введите номер"
                     />
                   </div>
@@ -219,14 +219,14 @@ export default function OrderDetailPage() {
                   rows={2}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
                   placeholder="Добавьте комментарий к изменению статуса..."
                 />
               </div>
               <button
                 type="submit"
                 disabled={saving || newStatus === order.status}
-                className="px-5 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                className="px-5 py-2 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
               >
                 {saving ? 'Сохранение...' : 'Изменить статус'}
               </button>
@@ -245,7 +245,7 @@ export default function OrderDetailPage() {
                 <div key={h.id} className="flex gap-4">
                   {/* Timeline line */}
                   <div className="flex flex-col items-center">
-                    <div className="w-3 h-3 rounded-full bg-blue-600 mt-1.5 shrink-0" />
+                    <div className="w-3 h-3 rounded-full bg-[#22c55e] mt-1.5 shrink-0" />
                     {i < history.length - 1 && <div className="w-0.5 flex-1 bg-gray-200" />}
                   </div>
                   {/* Content */}
@@ -299,7 +299,7 @@ export default function OrderDetailPage() {
                     value={lossReasonOther}
                     onChange={(e) => setLossReasonOther(e.target.value)}
                     placeholder="Укажите причину..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e] mt-1"
                   />
                 )}
               </div>

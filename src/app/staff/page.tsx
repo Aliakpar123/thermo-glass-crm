@@ -101,7 +101,7 @@ export default function StaffPage() {
               onClick={() => setPeriod(p.key)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 period === p.key
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#22c55e] text-white'
                   : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -226,7 +226,7 @@ export default function StaffPage() {
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 />
               </div>
 
@@ -236,7 +236,7 @@ export default function StaffPage() {
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 />
               </div>
 
@@ -245,7 +245,7 @@ export default function StaffPage() {
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 >
                   <option value="admin">Администратор</option>
                   <option value="order_manager">Менеджер заявок</option>
@@ -263,7 +263,7 @@ export default function StaffPage() {
                   type="text"
                   value={editForm.password}
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                   placeholder="Оставьте пустым, чтобы не менять"
                 />
                 <p className="text-xs text-gray-400 mt-1">Минимум 4 символа. Оставьте пустым, если не хотите менять пароль.</p>
@@ -274,7 +274,7 @@ export default function StaffPage() {
               <button
                 onClick={handleSave}
                 disabled={saving || !editForm.name.trim()}
-                className="flex-1 px-4 py-2.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+                className="flex-1 px-4 py-2.5 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
               >
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>

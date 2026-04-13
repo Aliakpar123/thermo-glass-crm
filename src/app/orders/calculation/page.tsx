@@ -175,7 +175,7 @@ function CalculationForm() {
                 required
                 value={form.object_city}
                 onChange={(e) => setForm({ ...form, object_city: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 placeholder="Квартира, Астана"
               />
             </div>
@@ -208,7 +208,7 @@ function CalculationForm() {
                         type="number"
                         value={item.width}
                         onChange={(e) => updateItem(i, 'width', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                         placeholder="мм"
                       />
                     </td>
@@ -217,7 +217,7 @@ function CalculationForm() {
                         type="number"
                         value={item.height}
                         onChange={(e) => updateItem(i, 'height', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                         placeholder="мм"
                       />
                     </td>
@@ -227,7 +227,7 @@ function CalculationForm() {
                         min={0}
                         value={item.qty}
                         onChange={(e) => updateItem(i, 'qty', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                         placeholder="шт"
                       />
                     </td>
@@ -240,7 +240,7 @@ function CalculationForm() {
                       <select
                         value={item.heating}
                         onChange={(e) => updateItem(i, 'heating', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                       >
                         <option value="">---</option>
                         <option value="Да">Да</option>
@@ -251,7 +251,7 @@ function CalculationForm() {
                       <select
                         value={item.chambers}
                         onChange={(e) => updateItem(i, 'chambers', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                       >
                         <option value="">---</option>
                         <option value="1">1</option>
@@ -264,7 +264,7 @@ function CalculationForm() {
                         type="text"
                         value={item.thickness}
                         onChange={(e) => updateItem(i, 'thickness', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#22c55e] text-gray-900"
                         placeholder="мм"
                       />
                     </td>
@@ -291,7 +291,7 @@ function CalculationForm() {
               <select
                 value={form.heating_type}
                 onChange={(e) => setForm({ ...form, heating_type: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
               >
                 <option value="Основное">Основное</option>
                 <option value="Дополнительное">Дополнительное</option>
@@ -303,7 +303,7 @@ function CalculationForm() {
                 type="number"
                 value={form.required_power}
                 onChange={(e) => setForm({ ...form, required_power: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 placeholder="450"
               />
             </div>
@@ -312,7 +312,7 @@ function CalculationForm() {
               <select
                 value={form.multifunctional_glass}
                 onChange={(e) => setForm({ ...form, multifunctional_glass: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
               >
                 <option value="нет">Нет</option>
                 <option value="да">Да</option>
@@ -323,7 +323,7 @@ function CalculationForm() {
               <select
                 value={form.glass_color}
                 onChange={(e) => setForm({ ...form, glass_color: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
               >
                 <option value="прозрачная">Прозрачная</option>
                 <option value="бронза">Бронза</option>
@@ -337,7 +337,7 @@ function CalculationForm() {
               <select
                 value={form.room_type}
                 onChange={(e) => setForm({ ...form, room_type: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
               >
                 <option value="Квартира">Квартира</option>
                 <option value="Дом">Дом</option>
@@ -354,7 +354,7 @@ function CalculationForm() {
                 step="0.1"
                 value={form.room_area}
                 onChange={(e) => setForm({ ...form, room_area: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
                 placeholder="м2"
               />
             </div>
@@ -366,7 +366,7 @@ function CalculationForm() {
           <button
             type="submit"
             disabled={saving}
-            className="px-8 py-3 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
+            className="px-8 py-3 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
           >
             {saving ? 'Сохранение...' : isEditing ? 'Сохранить расчёт' : 'Создать заявку на расчет'}
           </button>

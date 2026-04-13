@@ -43,7 +43,7 @@ export default function OrdersPage() {
             </a>
             <Link
               href="/orders/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="bg-[#22c55e] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#16a34a] transition"
             >
               Новый заказ
             </Link>
@@ -71,7 +71,7 @@ export default function OrdersPage() {
               onClick={() => setStatusFilter(tab.key)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
                 statusFilter === tab.key
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#22c55e] text-white'
                   : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}
             >
