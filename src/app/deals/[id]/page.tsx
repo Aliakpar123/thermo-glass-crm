@@ -69,13 +69,13 @@ type TimelineItem = {
 
 const PIPELINE_STAGES: { key: OrderStatus; short: string }[] = [
   { key: 'new', short: 'Новый' },
-  { key: 'contacted', short: 'Связались' },
+  { key: 'contacted', short: 'Связь' },
+  { key: 'measurement', short: 'Замер' },
+  { key: 'sent_to_factory', short: 'На ЗАВОД' },
   { key: 'calculation', short: 'КП' },
-  { key: 'approved', short: 'Переговоры' },
-  { key: 'invoiced', short: 'Счёт' },
+  { key: 'approved', short: 'Согласов.' },
   { key: 'paid', short: 'Оплачен' },
   { key: 'factory', short: 'Завод' },
-  { key: 'production', short: 'Произв.' },
   { key: 'delivery', short: 'Доставка' },
   { key: 'installation', short: 'Монтаж' },
   { key: 'completed', short: 'Готово' },

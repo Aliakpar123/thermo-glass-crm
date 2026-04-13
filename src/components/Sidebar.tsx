@@ -251,7 +251,7 @@ export default function Sidebar() {
                       Просроченные ({notifications.length})
                     </div>
                   )}
-                  {notifications.length > 0 ? (
+                  {notifications.length > 0 && (
                     notifications.map((n) => {
                       const label = getNotificationLabel(n.days_overdue);
                       const dotColor = getNotificationDot(n.days_overdue);
