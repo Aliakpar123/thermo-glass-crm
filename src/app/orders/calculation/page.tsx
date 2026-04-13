@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 
 interface ItemRow {
@@ -27,6 +28,7 @@ const emptyRow = (): ItemRow => ({
 function CalculationForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const orderId = searchParams.get('order_id'); // If editing existing deal
   const leadId = searchParams.get('lead_id');
   const clientId = searchParams.get('client_id');
@@ -36,6 +38,7 @@ function CalculationForm() {
 
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow(), emptyRow()]);
+  const [title, setTitle] = useState('');
 
   const [form, setForm] = useState({
     object_city: '',
@@ -93,13 +96,15 @@ function CalculationForm() {
 
       let res;
       if (isEditing) {
-        // Update existing deal with calculation data
-        res = await fetch(`/api/orders/${orderId}`, {
-          method: 'PUT',
+        // Create a new calculation entry for this deal
+        res = await fetch(`/api/orders/${orderId}/calculations`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...calcData,
-            comment: 'Расчёт сохранён',
+            title: title,
+            created_by: (session?.user as Record<string, unknown>)?.id || null,
+            created_by_name: session?.user?.name || '',
           }),
         });
       } else {
@@ -127,9 +132,13 @@ function CalculationForm() {
             body: JSON.stringify({ status: 'converted' }),
           });
         }
-        const order = await res.json();
-        // Return to deal card
-        router.push(`/deals/${isEditing ? orderId : order.id}`);
+        if (isEditing) {
+          // Return to deal card
+          router.push(`/deals/${orderId}`);
+        } else {
+          const order = await res.json();
+          router.push(`/deals/${order.id}`);
+        }
       }
     } finally {
       setSaving(false);
@@ -146,6 +155,20 @@ function CalculationForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Title for calculation */}
+        {isEditing && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Название расчёта</h2>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#22c55e] text-gray-900"
+              placeholder="Расчёт #1 — Спальня"
+            />
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Данные клиента</h2>
@@ -368,7 +391,7 @@ function CalculationForm() {
             disabled={saving}
             className="px-8 py-3 text-sm text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition disabled:opacity-50 font-medium"
           >
-            {saving ? 'Сохранение...' : isEditing ? 'Сохранить расчёт' : 'Создать заявку на расчет'}
+            {saving ? 'Сохранение...' : isEditing ? 'Добавить расчёт' : 'Создать заявку на расчет'}
           </button>
           <button
             type="button"

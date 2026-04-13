@@ -20,6 +20,25 @@ import {
   LeadSource,
 } from '@/types';
 
+interface Calculation {
+  id: number;
+  order_id: number;
+  title: string;
+  object_city: string;
+  items_json: string;
+  heating_type: string;
+  required_power: number;
+  multifunctional_glass: string;
+  glass_color: string;
+  room_type: string;
+  room_area: number;
+  total_area: number;
+  quantity: number;
+  created_by: number | null;
+  created_by_name: string;
+  created_at: string;
+}
+
 interface ClientComment {
   id: number;
   client_id: number;
@@ -183,6 +202,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [pastingChat, setPastingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Calculations
+  const [calculations, setCalculations] = useState<Calculation[]>([]);
+  const [expandedCalcs, setExpandedCalcs] = useState<Set<number>>(new Set());
+
   // @mention autocomplete state
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -281,6 +304,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       if (msgsRes.ok) {
         const msgsData = await msgsRes.json();
         setChatMessages(msgsData);
+      }
+
+      // Fetch calculations
+      const calcsRes = await fetch(`/api/orders/${id}/calculations`);
+      if (calcsRes.ok) {
+        const calcsData = await calcsRes.json();
+        setCalculations(calcsData);
       }
     } catch {
       // ignore
@@ -845,110 +875,243 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
                 {/* Calculation tab */}
                 {activeTab === 'calculation' && (
-                  <div>
-                    {hasCalculation ? (
-                      <div className="space-y-6">
-                        {/* Items table */}
-                        {calcItems.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-semibold text-gray-900 mb-3">Позиции</h3>
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="bg-gray-50">
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Ширина</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Высота</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Кол-во</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Площадь</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Нагрев</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Камеры</th>
-                                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Толщина</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {calcItems.map((item, idx) => (
-                                    <tr key={idx} className="border-t border-gray-100">
-                                      <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
-                                      <td className="px-3 py-2">{String(item.width || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.height || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.quantity || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.area || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.heating || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.chambers || '-')}</td>
-                                      <td className="px-3 py-2">{String(item.thickness || '-')}</td>
+                  <div className="space-y-4">
+                    {/* New calculation button */}
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/orders/calculation?order_id=${order.id}&client_id=${order.client_id}&client_name=${encodeURIComponent(order.client_name || '')}&client_phone=${encodeURIComponent((order as unknown as Record<string, unknown>).client_phone as string || '')}`}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
+                      >
+                        + Новый расчёт
+                      </Link>
+                    </div>
+
+                    {/* List of saved calculations */}
+                    {calculations.map((calc) => {
+                      const isExpanded = expandedCalcs.has(calc.id);
+                      let calcItemsParsed: Record<string, unknown>[] = [];
+                      try {
+                        const p = JSON.parse(calc.items_json);
+                        if (Array.isArray(p)) calcItemsParsed = p;
+                      } catch { /* ignore */ }
+
+                      return (
+                        <div key={calc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              setExpandedCalcs(prev => {
+                                const next = new Set(prev);
+                                if (next.has(calc.id)) next.delete(calc.id);
+                                else next.add(calc.id);
+                                return next;
+                              });
+                            }}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold text-gray-900">{calc.title || 'Расчёт'}</span>
+                              <span className="text-xs text-gray-500">{formatDate(calc.created_at)}</span>
+                              {calc.created_by_name && (
+                                <span className="text-xs text-gray-400">{calc.created_by_name}</span>
+                              )}
+                            </div>
+                            <span className="text-gray-400 text-sm">{isExpanded ? '\u25B2' : '\u25BC'}</span>
+                          </button>
+                          {isExpanded && (
+                            <div className="p-4 space-y-4">
+                              {calc.object_city && (
+                                <div className="text-sm text-gray-900">
+                                  <span className="text-gray-500">Объект:</span> {calc.room_type}{calc.room_type && calc.object_city ? ', ' : ''}{calc.object_city}
+                                </div>
+                              )}
+                              {calcItemsParsed.length > 0 && (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="bg-gray-50">
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Ширина</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Высота</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Кол-во</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Площадь</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Нагрев</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Камеры</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Толщина</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {calcItemsParsed.map((item, idx) => (
+                                        <tr key={idx} className="border-t border-gray-100">
+                                          <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.width || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.height || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.qty || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.area || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.heating || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.chambers || '-')}</td>
+                                          <td className="px-3 py-2 text-gray-900">{String(item.thickness || '-')}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                {calc.total_area ? (
+                                  <div>
+                                    <span className="text-gray-500">Площадь остекления:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.total_area} м2</span>
+                                  </div>
+                                ) : null}
+                                {calc.heating_type && (
+                                  <div>
+                                    <span className="text-gray-500">Тип обогрева:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.heating_type}</span>
+                                  </div>
+                                )}
+                                {calc.required_power ? (
+                                  <div>
+                                    <span className="text-gray-500">Мощность:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.required_power} Вт</span>
+                                  </div>
+                                ) : null}
+                                {calc.glass_color && (
+                                  <div>
+                                    <span className="text-gray-500">Цвет стекла:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.glass_color}</span>
+                                  </div>
+                                )}
+                                {calc.multifunctional_glass && (
+                                  <div>
+                                    <span className="text-gray-500">Мультифункциональное:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.multifunctional_glass}</span>
+                                  </div>
+                                )}
+                                {calc.room_area ? (
+                                  <div>
+                                    <span className="text-gray-500">Площадь помещения:</span>
+                                    <span className="ml-2 font-medium text-gray-900">{calc.room_area} м2</span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Backward compatibility: show old calculation from order.items_json */}
+                    {hasCalculation && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => {
+                            setExpandedCalcs(prev => {
+                              const next = new Set(prev);
+                              if (next.has(-1)) next.delete(-1);
+                              else next.add(-1);
+                              return next;
+                            });
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-amber-50 hover:bg-amber-100 transition text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-gray-900">Расчёт (первоначальный)</span>
+                            <span className="text-xs text-gray-500">{order.created_at ? formatDate(order.created_at) : ''}</span>
+                          </div>
+                          <span className="text-gray-400 text-sm">{expandedCalcs.has(-1) ? '\u25B2' : '\u25BC'}</span>
+                        </button>
+                        {expandedCalcs.has(-1) && (
+                          <div className="p-4 space-y-4">
+                            {order.object_city && (
+                              <div className="text-sm text-gray-900">
+                                <span className="text-gray-500">Объект:</span> {order.room_type}{order.room_type && order.object_city ? ', ' : ''}{order.object_city}
+                              </div>
+                            )}
+                            {calcItems.length > 0 && (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-gray-50">
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Ширина</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Высота</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Кол-во</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Площадь</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Нагрев</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Камеры</th>
+                                      <th className="text-left px-3 py-2 text-gray-500 font-medium">Толщина</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {calcItems.map((item, idx) => (
+                                      <tr key={idx} className="border-t border-gray-100">
+                                        <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.width || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.height || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.quantity || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.area || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.heating || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.chambers || '-')}</td>
+                                        <td className="px-3 py-2 text-gray-900">{String(item.thickness || '-')}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              {order.heating_type && (
+                                <div>
+                                  <span className="text-gray-500">Тип обогрева:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.heating_type}</span>
+                                </div>
+                              )}
+                              {order.required_power ? (
+                                <div>
+                                  <span className="text-gray-500">Мощность:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.required_power} Вт</span>
+                                </div>
+                              ) : null}
+                              {order.glass_color && (
+                                <div>
+                                  <span className="text-gray-500">Цвет стекла:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.glass_color}</span>
+                                </div>
+                              )}
+                              {order.multifunctional_glass && (
+                                <div>
+                                  <span className="text-gray-500">Мультифункциональное:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.multifunctional_glass}</span>
+                                </div>
+                              )}
+                              {order.room_type && (
+                                <div>
+                                  <span className="text-gray-500">Тип помещения:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.room_type}</span>
+                                </div>
+                              )}
+                              {order.room_area ? (
+                                <div>
+                                  <span className="text-gray-500">Площадь помещения:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.room_area} м2</span>
+                                </div>
+                              ) : null}
+                              {order.total_area ? (
+                                <div>
+                                  <span className="text-gray-500">Площадь остекления:</span>
+                                  <span className="ml-2 font-medium text-gray-900">{order.total_area} м2</span>
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         )}
-
-                        {/* Additional params */}
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-3">Параметры</h3>
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            {order.heating_type && (
-                              <div>
-                                <span className="text-gray-500">Тип обогрева:</span>
-                                <span className="ml-2 font-medium">{order.heating_type}</span>
-                              </div>
-                            )}
-                            {order.required_power ? (
-                              <div>
-                                <span className="text-gray-500">Требуемая мощность:</span>
-                                <span className="ml-2 font-medium">{order.required_power} Вт/м2</span>
-                              </div>
-                            ) : null}
-                            {order.glass_color && (
-                              <div>
-                                <span className="text-gray-500">Цвет стекла:</span>
-                                <span className="ml-2 font-medium">{order.glass_color}</span>
-                              </div>
-                            )}
-                            {order.multifunctional_glass && (
-                              <div>
-                                <span className="text-gray-500">Мультифункциональное:</span>
-                                <span className="ml-2 font-medium">{order.multifunctional_glass}</span>
-                              </div>
-                            )}
-                            {order.room_type && (
-                              <div>
-                                <span className="text-gray-500">Тип помещения:</span>
-                                <span className="ml-2 font-medium">{order.room_type}</span>
-                              </div>
-                            )}
-                            {order.room_area ? (
-                              <div>
-                                <span className="text-gray-500">Площадь помещения:</span>
-                                <span className="ml-2 font-medium">{order.room_area} м2</span>
-                              </div>
-                            ) : null}
-                            {order.total_area ? (
-                              <div>
-                                <span className="text-gray-500">Общая площадь остекления:</span>
-                                <span className="ml-2 font-medium">{order.total_area} м2</span>
-                              </div>
-                            ) : null}
-                            {order.object_city && (
-                              <div>
-                                <span className="text-gray-500">Город объекта:</span>
-                                <span className="ml-2 font-medium">{order.object_city}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                    ) : (
+                    )}
+
+                    {/* Empty state */}
+                    {calculations.length === 0 && !hasCalculation && (
                       <div className="text-center py-12">
-                        <p className="text-gray-400 text-sm mb-4">Заявка на расчёт ещё не заполнена</p>
-                        <Link
-                          href={`/orders/calculation?order_id=${order.id}&client_id=${order.client_id}&client_name=${encodeURIComponent(order.client_name || '')}&client_phone=${encodeURIComponent((order as unknown as Record<string, unknown>).client_phone as string || '')}`}
-                          className="inline-flex items-center px-5 py-2 text-sm font-medium text-white bg-[#22c55e] rounded-lg hover:bg-[#16a34a] transition"
-                        >
-                          Заполнить заявку на расчёт
-                        </Link>
+                        <p className="text-gray-400 text-sm mb-4">Расчёты ещё не добавлены</p>
                       </div>
                     )}
                   </div>

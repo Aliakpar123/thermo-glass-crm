@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v9_accounting'; // bump to force re-init
+const DB_VERSION = 'v10_multi_calc'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -203,6 +203,26 @@ async function initDb() {
       payment_date DATE DEFAULT CURRENT_DATE,
       notes TEXT DEFAULT '',
       created_by INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // Calculations table for multiple calculations per deal
+    try { await sql`CREATE TABLE IF NOT EXISTS calculations (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL,
+      title TEXT DEFAULT '',
+      object_city TEXT DEFAULT '',
+      items_json TEXT DEFAULT '[]',
+      heating_type TEXT DEFAULT '',
+      required_power INTEGER DEFAULT 0,
+      multifunctional_glass TEXT DEFAULT '',
+      glass_color TEXT DEFAULT '',
+      room_type TEXT DEFAULT '',
+      room_area NUMERIC DEFAULT 0,
+      total_area NUMERIC DEFAULT 0,
+      quantity INTEGER DEFAULT 1,
+      created_by INTEGER,
+      created_by_name TEXT DEFAULT '',
       created_at TIMESTAMP DEFAULT NOW()
     )`; } catch(e) {}
 
