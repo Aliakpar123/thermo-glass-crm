@@ -10,6 +10,8 @@ export default function ClientsPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role || '';
   const isClientManager = userRole === 'client_manager';
+  const isAdmin = userRole === 'admin';
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [clients, setClients] = useState<(Client & { status?: string })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +85,22 @@ export default function ClientsPage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Админ удаляет клиента
+  const handleDelete = async (client: Client) => {
+    if (!confirm(`Удалить клиента "${client.name}"? Это действие нельзя отменить.`)) return;
+    setDeletingId(client.id);
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchClients();
+      } else {
+        alert('Не удалось удалить. Возможно, у клиента есть сделки.');
+      }
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -177,7 +195,7 @@ export default function ClientsPage() {
                     <th className="pb-3 font-medium">Город</th>
                     <th className="pb-3 font-medium">Источник</th>
                     <th className="pb-3 font-medium">Дата</th>
-                    {isClientManager && <th className="pb-3 font-medium text-center">Действие</th>}
+                    {(isClientManager || isAdmin) && <th className="pb-3 font-medium text-center">Действие</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -216,26 +234,40 @@ export default function ClientsPage() {
                       <td className="py-3 text-gray-500">
                         {new Date(client.created_at).toLocaleDateString('ru-RU')}
                       </td>
-                      {isClientManager && (
+                      {(isClientManager || isAdmin) && (
                         <td className="py-3 text-center">
-                          {successId === client.id ? (
-                            <span className="text-green-600 text-xs font-medium">Передано!</span>
-                          ) : (
-                            <button
-                              onClick={() => handleCreateDeal(client)}
-                              disabled={sendingId === client.id}
-                              className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 whitespace-nowrap"
-                            >
-                              {sendingId === client.id ? 'Создание...' : '→ В сделки'}
-                            </button>
-                          )}
+                          <div className="flex items-center justify-center gap-2">
+                            {isClientManager && (
+                              successId === client.id ? (
+                                <span className="text-green-600 text-xs font-medium">Передано!</span>
+                              ) : (
+                                <button
+                                  onClick={() => handleCreateDeal(client)}
+                                  disabled={sendingId === client.id}
+                                  className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {sendingId === client.id ? 'Создание...' : '→ В сделки'}
+                                </button>
+                              )
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDelete(client)}
+                                disabled={deletingId === client.id}
+                                className="px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                title="Удалить клиента"
+                              >
+                                {deletingId === client.id ? '...' : '🗑'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={isClientManager ? 6 : 5} className="py-8 text-center text-gray-500">
+                      <td colSpan={(isClientManager || isAdmin) ? 6 : 5} className="py-8 text-center text-gray-500">
                         {search ? 'Ничего не найдено' : 'Нет клиентов'}
                       </td>
                     </tr>
