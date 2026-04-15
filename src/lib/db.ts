@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v10_multi_calc'; // bump to force re-init
+const DB_VERSION = 'v11_tasks'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -203,6 +203,25 @@ async function initDb() {
       payment_date DATE DEFAULT CURRENT_DATE,
       notes TEXT DEFAULT '',
       created_by INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // Tasks table
+    try { await sql`CREATE TABLE IF NOT EXISTS tasks (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      task_type TEXT DEFAULT 'other',
+      priority TEXT DEFAULT 'normal',
+      status TEXT DEFAULT 'pending',
+      due_date TIMESTAMP,
+      order_id INTEGER,
+      client_id INTEGER,
+      assigned_to INTEGER NOT NULL,
+      assigned_to_name TEXT DEFAULT '',
+      created_by INTEGER NOT NULL,
+      created_by_name TEXT DEFAULT '',
+      completed_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT NOW()
     )`; } catch(e) {}
 

@@ -17,6 +17,9 @@ import {
   PAIN_CATEGORIES,
   EXPENSE_CATEGORIES,
   PAYMENT_TYPE_LABELS,
+  TASK_TYPE_LABELS,
+  TASK_TYPE_ICONS,
+  TASK_PRIORITY_LABELS,
   LeadSource,
 } from '@/types';
 
@@ -202,6 +205,16 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [pastingChat, setPastingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Deal tasks
+  const [dealTasks, setDealTasks] = useState<{ id: number; title: string; status: string; priority: string; task_type: string; due_date: string | null; assigned_to_name: string; created_by_name: string; is_overdue?: boolean }[]>([]);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskType, setNewTaskType] = useState('other');
+  const [newTaskPriority, setNewTaskPriority] = useState('normal');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newTaskAssignedTo, setNewTaskAssignedTo] = useState('');
+  const [savingTask, setSavingTask] = useState(false);
+
   // Calculations
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [expandedCalcs, setExpandedCalcs] = useState<Set<number>>(new Set());
@@ -311,6 +324,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       if (calcsRes.ok) {
         const calcsData = await calcsRes.json();
         setCalculations(calcsData);
+      }
+
+      // Fetch deal tasks
+      const tasksRes = await fetch(`/api/tasks?order_id=${id}`);
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json();
+        if (Array.isArray(tasksData)) setDealTasks(tasksData);
       }
     } catch {
       // ignore
@@ -1458,6 +1478,181 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Deal Tasks Section */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Задачи</h3>
+                <button
+                  onClick={() => {
+                    setNewTaskAssignedTo(String((session?.user as { id?: string })?.id || ''));
+                    setShowTaskModal(true);
+                  }}
+                  className="text-xs text-[#22c55e] font-medium hover:text-[#16a34a] transition"
+                >
+                  + Задача
+                </button>
+              </div>
+
+              {dealTasks.length === 0 ? (
+                <p className="text-xs text-gray-400">Нет задач по этой сделке</p>
+              ) : (
+                <div className="space-y-2">
+                  {dealTasks.map((t) => {
+                    const dueInfo = t.due_date ? (() => {
+                      const d = new Date(t.due_date);
+                      const now = new Date();
+                      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                      const dueDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                      const diffDays = Math.floor((dueDay.getTime() - today.getTime()) / 86400000);
+                      const formatted = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                      if (diffDays < 0) return { text: formatted, color: 'text-red-500' };
+                      if (diffDays === 0) return { text: 'сегодня', color: 'text-orange-500' };
+                      return { text: formatted, color: 'text-gray-400' };
+                    })() : null;
+
+                    return (
+                      <div key={t.id} className={`flex items-center gap-2 p-2 rounded-lg border ${t.status === 'completed' ? 'bg-gray-50 border-gray-100' : t.is_overdue ? 'border-red-200 bg-red-50/30' : 'border-gray-100'}`}>
+                        <button
+                          onClick={async () => {
+                            await fetch(`/api/tasks/${t.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: t.status === 'completed' ? 'pending' : 'completed' }),
+                            });
+                            fetchData();
+                          }}
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
+                            t.status === 'completed' ? 'bg-[#22c55e] border-[#22c55e] text-white' : 'border-gray-300 hover:border-[#22c55e]'
+                          }`}
+                        >
+                          {t.status === 'completed' && <span className="text-xs">&#10003;</span>}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-medium text-gray-900 truncate ${t.status === 'completed' ? 'line-through opacity-60' : ''}`}>
+                            {t.priority === 'urgent' && <span className="text-red-500 mr-1">!</span>}
+                            {TASK_TYPE_ICONS[t.task_type] || ''} {t.title}
+                          </div>
+                          <div className="text-[10px] text-gray-400">
+                            {t.assigned_to_name}{dueInfo ? ` · ${dueInfo.text}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Quick Add Task Modal */}
+              {showTaskModal && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowTaskModal(false)}>
+                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 mx-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-bold text-gray-900">Новая задача</h3>
+                      <button onClick={() => setShowTaskModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-900 mb-1">Заголовок</label>
+                        <input
+                          type="text"
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          placeholder="Что нужно сделать?"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-900 mb-1">Кому</label>
+                        <select
+                          value={newTaskAssignedTo}
+                          onChange={(e) => setNewTaskAssignedTo(e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                        >
+                          <option value="">Выберите</option>
+                          {teamMembers.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-900 mb-1">Тип</label>
+                          <select
+                            value={newTaskType}
+                            onChange={(e) => setNewTaskType(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                          >
+                            {Object.entries(TASK_TYPE_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>{TASK_TYPE_ICONS[k]} {v}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-900 mb-1">Приоритет</label>
+                          <select
+                            value={newTaskPriority}
+                            onChange={(e) => setNewTaskPriority(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                          >
+                            {Object.entries(TASK_PRIORITY_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-900 mb-1">Срок</label>
+                        <input
+                          type="date"
+                          value={newTaskDueDate}
+                          onChange={(e) => setNewTaskDueDate(e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#22c55e]"
+                        />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!newTaskTitle || !newTaskAssignedTo) return;
+                          setSavingTask(true);
+                          const assignee = teamMembers.find((s) => s.id === Number(newTaskAssignedTo));
+                          try {
+                            await fetch('/api/tasks', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                title: newTaskTitle,
+                                task_type: newTaskType,
+                                priority: newTaskPriority,
+                                due_date: newTaskDueDate || null,
+                                order_id: Number(id),
+                                client_id: order?.client_id || null,
+                                assigned_to: Number(newTaskAssignedTo),
+                                assigned_to_name: assignee?.name || '',
+                                created_by: Number((session?.user as { id?: string })?.id || 0),
+                                created_by_name: session?.user?.name || '',
+                              }),
+                            });
+                            setShowTaskModal(false);
+                            setNewTaskTitle('');
+                            setNewTaskType('other');
+                            setNewTaskPriority('normal');
+                            setNewTaskDueDate('');
+                            fetchData();
+                          } catch {
+                            // ignore
+                          }
+                          setSavingTask(false);
+                        }}
+                        disabled={savingTask || !newTaskTitle || !newTaskAssignedTo}
+                        className="w-full py-2 bg-[#22c55e] text-white rounded-lg text-sm font-medium hover:bg-[#16a34a] transition disabled:opacity-50"
+                      >
+                        {savingTask ? 'Создаём...' : 'Создать задачу'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

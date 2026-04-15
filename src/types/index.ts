@@ -162,6 +162,32 @@ export const PAYMENT_TYPE_LABELS: Record<string, string> = {
   card: 'Карта',
 };
 
+export const TASK_TYPE_LABELS: Record<string, string> = {
+  call: 'Звонок',
+  meeting: 'Встреча',
+  email: 'Email',
+  measurement: 'Замер',
+  delivery: 'Доставка',
+  installation: 'Монтаж',
+  other: 'Другое',
+};
+
+export const TASK_TYPE_ICONS: Record<string, string> = {
+  call: '📞',
+  meeting: '🏠',
+  email: '📧',
+  measurement: '📐',
+  delivery: '🚚',
+  installation: '🔧',
+  other: '📋',
+};
+
+export const TASK_PRIORITY_LABELS: Record<string, string> = {
+  normal: 'Обычный',
+  important: 'Важный',
+  urgent: 'Срочный',
+};
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Администратор',
   order_manager: 'Менеджер заявок',

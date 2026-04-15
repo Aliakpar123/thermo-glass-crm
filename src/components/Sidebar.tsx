@@ -30,6 +30,7 @@ interface MentionNotification {
 
 const navItems = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
+  { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
@@ -71,6 +72,8 @@ export default function Sidebar() {
   const userRole = (session?.user as { role?: string })?.role || '';
   const userId = (session?.user as { id?: string })?.id || '';
   const [newLeadsCount, setNewLeadsCount] = useState(0);
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
+  const [overdueTasksCount, setOverdueTasksCount] = useState(0);
 
   // Notifications state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -94,6 +97,27 @@ export default function Sidebar() {
     const interval = setInterval(fetchCount, 30000);
     return () => clearInterval(interval);
   }, [userRole]);
+
+  // Fetch task counts
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchTaskCounts = () => {
+      fetch(`/api/tasks?assigned_to=${userId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setPendingTasksCount(data.length);
+            setOverdueTasksCount(data.filter((t: { is_overdue?: boolean }) => t.is_overdue).length);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchTaskCounts();
+    const interval = setInterval(fetchTaskCounts, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
 
   // Fetch notifications
   useEffect(() => {
@@ -145,7 +169,7 @@ export default function Sidebar() {
     }
   };
 
-  const totalBadgeCount = notifications.length + mentions.length;
+  const totalBadgeCount = notifications.length + mentions.length + overdueTasksCount;
 
   // Close panel on click outside
   useEffect(() => {
@@ -243,8 +267,36 @@ export default function Sidebar() {
                     </div>
                   )}
 
+                  {/* Overdue tasks section */}
+                  {overdueTasksCount > 0 && (
+                    <div>
+                      <div className="px-4 py-2 bg-red-50 text-xs font-semibold text-red-700 uppercase tracking-wide">
+                        Просроченные задачи ({overdueTasksCount})
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowPanel(false);
+                          router.push('/tasks');
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900">
+                              У вас {overdueTasksCount} просроченн{overdueTasksCount === 1 ? 'ая задача' : overdueTasksCount < 5 ? 'ые задачи' : 'ых задач'}
+                            </div>
+                            <div className="text-xs text-red-500 mt-0.5">
+                              Перейти к задачам
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Empty state */}
-                  {notifications.length === 0 && mentions.length === 0 && (
+                  {notifications.length === 0 && mentions.length === 0 && overdueTasksCount === 0 && (
                     <div className="p-4 text-sm text-gray-500 text-center">
                       Нет уведомлений
                     </div>
@@ -313,6 +365,11 @@ export default function Sidebar() {
               {item.href === '/deals' && newLeadsCount > 0 && (
                 <span className="ml-auto bg-[#22c55e] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
                   {newLeadsCount}
+                </span>
+              )}
+              {item.href === '/tasks' && pendingTasksCount > 0 && (
+                <span className="ml-auto bg-[#22c55e] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
+                  {pendingTasksCount}
                 </span>
               )}
             </Link>
