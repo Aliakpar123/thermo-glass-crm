@@ -38,8 +38,8 @@ export async function POST(
 
     // Check size: base64 string length * 0.75 gives approximate byte size
     const approxBytes = file_data.length * 0.75;
-    if (approxBytes > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 2MB)' }, { status: 400 });
+    if (approxBytes > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
     }
 
     const rows = await sql`

@@ -421,8 +421,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !order) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Файл слишком большой (макс. 2МБ)');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Файл слишком большой (макс. 10МБ)');
       return;
     }
     setUploadingFile(true);
