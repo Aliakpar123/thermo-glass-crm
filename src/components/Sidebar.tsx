@@ -31,6 +31,7 @@ interface MentionNotification {
 const navItems = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
+  { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },

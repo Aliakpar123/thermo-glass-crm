@@ -183,6 +183,70 @@ function SimpleDashboard() {
   );
 }
 
+// Mini leaderboard widget for dashboard
+interface LeaderEntry {
+  id: number;
+  name: string;
+  points: number;
+  levelEmoji: string;
+  level: string;
+}
+
+const LEADER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+function getLeaderColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return LEADER_COLORS[Math.abs(hash) % LEADER_COLORS.length];
+}
+
+function MiniLeaderboard() {
+  const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
+
+  useEffect(() => {
+    fetch('/api/leaderboard?period=month')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setLeaders(data.slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
+
+  if (leaders.length === 0) return null;
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">🏆 Лидеры месяца</h2>
+        <Link href="/leaderboard" className="text-blue-600 text-sm hover:underline">Полный рейтинг</Link>
+      </div>
+      <div className="space-y-3">
+        {leaders.map((leader, idx) => (
+          <div key={leader.id} className="flex items-center gap-3">
+            <span className="text-xl">{medals[idx]}</span>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+              style={{
+                backgroundColor: getLeaderColor(leader.name),
+                boxShadow: `0 0 0 2px ${medalColors[idx]}`,
+              }}
+            >
+              {leader.name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900">{leader.name}</div>
+              <div className="text-xs text-gray-400">{leader.levelEmoji} {leader.level}</div>
+            </div>
+            <div className="text-sm font-bold text-gray-900">{leader.points} очков</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Full admin dashboard
 function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -305,8 +369,11 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Row 3: Overdue orders + Staff activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Row 3: Overdue orders + Staff activity + Mini Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Mini leaderboard */}
+        <MiniLeaderboard />
+
         {/* Overdue orders */}
         <div className="bg-white rounded-xl shadow-sm p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Просроченные заказы</h2>
