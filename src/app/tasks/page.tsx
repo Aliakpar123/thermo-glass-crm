@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
+import VoiceRecorder from '@/components/VoiceRecorder';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_ICONS,
@@ -493,7 +494,14 @@ export default function TasksPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Описание</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-900">Описание</label>
+                    <VoiceRecorder
+                      onTranscript={(text) => {
+                        setNewTask(prev => ({ ...prev, description: prev.description ? prev.description + ' ' + text : text }));
+                      }}
+                    />
+                  </div>
                   <textarea
                     value={newTask.description}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -622,7 +630,14 @@ export default function TasksPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Описание</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-900">Описание</label>
+                    <VoiceRecorder
+                      onTranscript={(text) => {
+                        setEditForm(prev => ({ ...prev, description: prev.description ? prev.description + ' ' + text : text }));
+                      }}
+                    />
+                  </div>
                   <textarea
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}

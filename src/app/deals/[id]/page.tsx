@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 import StatusBadge from '@/components/StatusBadge';
+import VoiceRecorder from '@/components/VoiceRecorder';
 import {
   Order,
   OrderHistory,
@@ -844,7 +845,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                             </div>
                           )}
                         </div>
-                        <div className="flex justify-end mt-2">
+                        <div className="flex justify-end items-center gap-2 mt-2">
+                          <VoiceRecorder
+                            onTranscript={(text) => {
+                              setCommentText(prev => prev ? prev + ' ' + text : text);
+                            }}
+                            disabled={sendingComment}
+                          />
                           <button
                             onClick={handleSendComment}
                             disabled={!commentText.trim() || sendingComment}
