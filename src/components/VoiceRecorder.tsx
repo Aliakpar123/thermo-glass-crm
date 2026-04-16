@@ -82,8 +82,8 @@ export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderP
         disabled={disabled}
         className={`p-2 rounded-lg transition-all duration-200 ${
           isRecording
-            ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+            ? 'bg-red-600 text-white animate-pulse shadow-lg shadow-red-500/30 ring-4 ring-red-200'
+            : 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
         } disabled:opacity-50`}
         title={isRecording ? 'Остановить запись' : 'Голосовая заметка'}
       >
