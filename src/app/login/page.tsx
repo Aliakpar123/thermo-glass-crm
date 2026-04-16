@@ -88,16 +88,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 p-3.5 rounded-lg text-[12px] text-gray-400 border" style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border)' }}>
-          <p className="font-medium text-gray-500 mb-1 text-[11px] uppercase tracking-wide">Аккаунты</p>
-          <p>Алиакбар: admin@thermoglass.kz / admin123</p>
-          <p>Нуртай: nurtay@thermoglass.kz / manager123</p>
-          <p>Алиакпар: aliakpar@thermoglass.kz / manager123</p>
-          <p>Камилла: kamilla@thermoglass.kz / manager123</p>
-          <p>Айжан: aizhan@thermoglass.kz / manager123</p>
-          <p>Евгений: evgeniy@thermoglass.kz / manager123</p>
-          <p>Маржан: marzhan@thermoglass.kz / manager123</p>
-        </div>
       </div>
     </div>
   );
