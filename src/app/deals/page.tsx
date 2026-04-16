@@ -101,6 +101,34 @@ interface Deal {
   next_action_text: string | null;
 }
 
+// --- Suggestion type ---
+
+interface Suggestion {
+  deal_id: number;
+  client_name: string;
+  client_phone: string;
+  type: 'call' | 'whatsapp' | 'followup' | 'discount' | 'urgency' | 'upsell';
+  priority: 'high' | 'medium' | 'low';
+  message: string;
+  action_text: string;
+  reason: string;
+}
+
+const SUGGESTION_TYPE_ICONS: Record<string, string> = {
+  call: '\uD83D\uDCDE',
+  whatsapp: '\uD83D\uDCAC',
+  followup: '\uD83D\uDD04',
+  discount: '\uD83C\uDFF7\uFE0F',
+  urgency: '\u26A1',
+  upsell: '\uD83D\uDC8E',
+};
+
+const PRIORITY_DOTS: Record<string, string> = {
+  high: '\uD83D\uDD34',
+  medium: '\uD83D\uDFE1',
+  low: '\uD83D\uDFE2',
+};
+
 // --- Manager avatar colors ---
 
 const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -164,12 +192,14 @@ function DealCard({
   canDrag,
   userRole,
   onTransfer,
+  suggestion,
 }: {
   deal: Deal;
   status: OrderStatus;
   canDrag: boolean;
   userRole: string;
   onTransfer: (dealId: number) => void;
+  suggestion?: Suggestion;
 }) {
   const {
     attributes,
@@ -198,12 +228,22 @@ function DealCard({
       style={style}
       {...attributes}
       {...(canDrag ? listeners : {})}
-      className={`deal-card bg-white rounded-xl border border-gray-100 p-3 border-l-[3px] ${CARD_BORDER_COLORS[status]} ${
+      className={`deal-card bg-white rounded-xl border border-gray-100 p-3 border-l-[3px] ${CARD_BORDER_COLORS[status]} relative ${
         canDrag
           ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-200 transition-all duration-150'
           : 'cursor-default'
       }`}
     >
+      {/* Autopilot suggestion badge */}
+      {suggestion && (
+        <div
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-400 rounded-full flex items-center justify-center text-[9px] animate-pulse cursor-help z-10 shadow-sm"
+          title={`\u0410\u0432\u0442\u043e\u043f\u0438\u043b\u043e\u0442: ${suggestion.message}`}
+        >
+          <span>{'\uD83E\uDD16'}</span>
+        </div>
+      )}
+
       {/* Row 1: status dot + name + amount + WhatsApp */}
       <div className="flex items-center gap-1.5">
         <span
@@ -305,6 +345,7 @@ function DroppableColumn({
   canDrag,
   userRole,
   onTransfer,
+  suggestionsMap,
 }: {
   status: OrderStatus;
   deals: Deal[];
@@ -312,6 +353,7 @@ function DroppableColumn({
   canDrag: (deal: Deal) => boolean;
   userRole: string;
   onTransfer: (dealId: number) => void;
+  suggestionsMap: Map<number, Suggestion>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const colorHex = STATUS_DOT_COLORS[status];
@@ -365,6 +407,7 @@ function DroppableColumn({
               canDrag={canDrag(deal)}
               userRole={userRole}
               onTransfer={onTransfer}
+              suggestion={suggestionsMap.get(deal.id)}
             />
           ))}
         </SortableContext>
@@ -682,6 +725,87 @@ function QuickAddModal({
   );
 }
 
+// --- Autopilot suggestion card ---
+
+function AutopilotCard({
+  suggestion,
+  onDismiss,
+}: {
+  suggestion: Suggestion;
+  onDismiss: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const priorityDot = PRIORITY_DOTS[suggestion.priority] || '';
+  const typeIcon = SUGGESTION_TYPE_ICONS[suggestion.type] || '';
+  const waLink = suggestion.client_phone
+    ? `https://wa.me/${suggestion.client_phone}?text=${encodeURIComponent(suggestion.action_text)}`
+    : '';
+
+  function handleCopy() {
+    navigator.clipboard.writeText(suggestion.action_text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="min-w-[280px] max-w-[320px] bg-gray-50 border border-gray-200 rounded-xl p-3 shrink-0 flex flex-col gap-2">
+      {/* Header: priority + type + message */}
+      <div className="flex items-start gap-1.5">
+        <span className="text-sm shrink-0">{priorityDot}</span>
+        <span className="text-sm shrink-0">{typeIcon}</span>
+        <span className="text-[13px] font-semibold text-gray-900 leading-tight flex-1">{suggestion.message}</span>
+      </div>
+
+      {/* Reason */}
+      <div className="text-[11px] text-gray-400">{suggestion.reason}</div>
+
+      {/* Action text (expandable) */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-left text-[11px] text-gray-500 hover:text-gray-700 flex items-center gap-1"
+      >
+        {'\uD83D\uDCAC'} {expanded ? '\u0421\u043a\u0440\u044b\u0442\u044c \u0442\u0435\u043a\u0441\u0442' : '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0442\u0435\u043a\u0441\u0442 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f'}
+      </button>
+      {expanded && (
+        <div className="bg-white border border-gray-200 rounded-lg p-2 text-[12px] text-gray-900 whitespace-pre-line leading-relaxed">
+          {suggestion.action_text}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 mt-auto">
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-150"
+        >
+          {copied ? '\u2705' : '\uD83D\uDCCB'} {copied ? '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e' : '\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c'}
+        </button>
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-white rounded-lg hover:opacity-90 transition-all duration-150"
+            style={{ backgroundColor: '#22c55e' }}
+          >
+            <WhatsAppIcon /> WhatsApp
+          </a>
+        )}
+        <button
+          onClick={onDismiss}
+          className="ml-auto text-gray-400 hover:text-gray-600 text-sm leading-none px-1"
+          title={'\u0423\u0431\u0440\u0430\u0442\u044c'}
+        >
+          {'\u2715'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // --- Main page ---
 
 interface OverdueNotification {
@@ -719,6 +843,11 @@ export default function DealsPage() {
   const userId = (session?.user as { id?: string })?.id || '';
   const userRole = (session?.user as { role?: string })?.role || '';
   const isAdmin = userRole === 'admin';
+
+  // Autopilot suggestions
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showAutopilot, setShowAutopilot] = useState(true);
+  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
 
   // My deals filter - default: my deals for non-admin, all deals for admin
   const [showMyDeals, setShowMyDeals] = useState(!isAdmin);
@@ -776,6 +905,30 @@ export default function DealsPage() {
     const interval = setInterval(fetchNotifications, 15000);
     return () => clearInterval(interval);
   }, [session]);
+
+  // Fetch autopilot suggestions
+  useEffect(() => {
+    function fetchSuggestions() {
+      const params = isAdmin ? '' : `?manager_id=${userId}`;
+      fetch(`/api/suggestions${params}`)
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setSuggestions(data); })
+        .catch(() => {});
+    }
+    fetchSuggestions();
+    const interval = setInterval(fetchSuggestions, 30000);
+    return () => clearInterval(interval);
+  }, [userId, isAdmin]);
+
+  // Build suggestions map for deal cards (first suggestion per deal)
+  const suggestionsMap = new Map<number, Suggestion>();
+  for (const s of suggestions) {
+    if (!suggestionsMap.has(s.deal_id) && !dismissedIds.has(s.deal_id)) {
+      suggestionsMap.set(s.deal_id, s);
+    }
+  }
+
+  const activeSuggestions = suggestions.filter(s => !dismissedIds.has(s.deal_id));
 
   function fetchDeals() {
     fetch('/api/deals')
@@ -1034,6 +1187,38 @@ export default function DealsPage() {
           </div>
         </div>
 
+        {/* Autopilot panel */}
+        {activeSuggestions.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            {/* Autopilot header */}
+            <button
+              onClick={() => setShowAutopilot(!showAutopilot)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-100 hover:from-orange-100 hover:to-amber-100 transition-all duration-150"
+            >
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-gray-900">
+                {'\uD83E\uDD16'} {'\u0410\u0432\u0442\u043e\u043f\u0438\u043b\u043e\u0442'}
+                <span className="text-[11px] font-medium text-gray-500 bg-white/80 px-2 py-0.5 rounded-full border border-gray-200">
+                  {activeSuggestions.length} {activeSuggestions.length === 1 ? '\u043f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0430' : activeSuggestions.length < 5 ? '\u043f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0438' : '\u043f\u043e\u0434\u0441\u043a\u0430\u0437\u043e\u043a'}
+                </span>
+              </span>
+              <span className="text-xs text-gray-400">{showAutopilot ? '\u25B2 \u0421\u0432\u0435\u0440\u043d\u0443\u0442\u044c' : '\u25BC \u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c'}</span>
+            </button>
+
+            {/* Suggestion cards */}
+            {showAutopilot && (
+              <div className="flex gap-3 p-3 overflow-x-auto">
+                {activeSuggestions.map((s, idx) => (
+                  <AutopilotCard
+                    key={`${s.deal_id}-${s.type}-${idx}`}
+                    suggestion={s}
+                    onDismiss={() => setDismissedIds(prev => new Set(prev).add(s.deal_id))}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Kanban board */}
         {loading ? (
           <div className="text-gray-500">Загрузка...</div>
@@ -1070,6 +1255,7 @@ export default function DealsPage() {
                       canDrag={canDragDeal}
                       userRole={userRole}
                       onTransfer={handleTransfer}
+                      suggestionsMap={suggestionsMap}
                     />
                   ));
                 })()}
