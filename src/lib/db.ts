@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v15_dynamic_tech'; // bump to force re-init
+const DB_VERSION = 'v16_company_order'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -321,6 +321,13 @@ async function initDb() {
     try { await sql`ALTER TABLE deal_expenses ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE activity_log ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 100`; } catch(e) {}
+
+    // Жёстко заданный порядок компаний на странице E1eventy:
+    // 1 — Semmar, 2 — Thermo Glass KZ, 3 — Dynamic tech
+    try { await sql`UPDATE companies SET sort_order = 1 WHERE slug = 'semmar'`; } catch(e) {}
+    try { await sql`UPDATE companies SET sort_order = 2 WHERE slug = 'thermo'`; } catch(e) {}
+    try { await sql`UPDATE companies SET sort_order = 3 WHERE slug = 'dynamic'`; } catch(e) {}
 
     // Seed компаний
     const companiesCount = await sql`SELECT COUNT(*) as count FROM companies`;

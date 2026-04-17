@@ -25,7 +25,7 @@ export async function getUserCompanies(userId: number): Promise<UserCompany[]> {
     FROM user_companies uc
     JOIN companies c ON c.id = uc.company_id
     WHERE uc.user_id = ${userId}
-    ORDER BY c.name ASC
+    ORDER BY COALESCE(c.sort_order, 100) ASC, c.name ASC
   `;
   return rows.map((r) => ({
     id: Number(r.id),

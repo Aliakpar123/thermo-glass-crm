@@ -9,7 +9,7 @@ export async function GET() {
     const rows = await sql`
       SELECT id, name, slug, logo_emoji, color, description
       FROM companies
-      ORDER BY name ASC
+      ORDER BY COALESCE(sort_order, 100) ASC, name ASC
     `;
     return NextResponse.json(rows);
   } catch (error) {
