@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v14_full_isolation'; // bump to force re-init
+const DB_VERSION = 'v15_dynamic_tech'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -330,6 +330,12 @@ async function initDb() {
       await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
         VALUES ('Semmar', 'semmar', '📦', '#3b82f6', 'Вторая компания холдинга')`;
     }
+    // Dynamic tech — третья компания холдинга. Добавляем, если ещё нет.
+    const dynamicExists = await sql`SELECT id FROM companies WHERE slug = 'dynamic' LIMIT 1`;
+    if (dynamicExists.length === 0) {
+      await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
+        VALUES ('Dynamic tech', 'dynamic', '⚡', '#8b5cf6', 'Технологическая компания холдинга')`;
+    }
 
     // Backfill: все существующие данные → Thermo Glass (id=1)
     const thermo = await sql`SELECT id FROM companies WHERE slug = 'thermo' LIMIT 1`;
@@ -362,6 +368,16 @@ async function initDb() {
         if (exists2.length === 0) {
           await sql`INSERT INTO user_companies (user_id, company_id, role, is_owner)
             VALUES (${aliakbar[0].id}, ${semmar[0].id}, 'admin', true)`;
+        }
+      }
+
+      // Алиакбар — учредитель Dynamic tech
+      const dynamic = await sql`SELECT id FROM companies WHERE slug = 'dynamic' LIMIT 1`;
+      if (dynamic.length > 0 && aliakbar.length > 0) {
+        const existsDyn = await sql`SELECT id FROM user_companies WHERE user_id = ${aliakbar[0].id} AND company_id = ${dynamic[0].id}`;
+        if (existsDyn.length === 0) {
+          await sql`INSERT INTO user_companies (user_id, company_id, role, is_owner)
+            VALUES (${aliakbar[0].id}, ${dynamic[0].id}, 'admin', true)`;
         }
       }
     }
