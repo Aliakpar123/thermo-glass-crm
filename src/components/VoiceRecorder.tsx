@@ -13,52 +13,93 @@ type SpeechRecognitionAny = any;
 export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const recognitionRef = useRef<SpeechRecognitionAny | null>(null);
+  // храним накопленный текст в ref, чтобы onend точно видел актуальное значение
+  const finalRef = useRef<string>('');
+  const interimRef = useRef<string>('');
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
+    setErrorMsg('');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Ваш браузер не поддерживает голосовой ввод. Используйте Chrome.');
+      setErrorMsg('Браузер не поддерживает голосовой ввод. Используйте Chrome или Edge.');
+      return;
+    }
+
+    // Запрашиваем доступ к микрофону заранее — иначе в некоторых браузерах
+    // SpeechRecognition падает с 'not-allowed' без внятной причины.
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setErrorMsg('Разрешите доступ к микрофону в настройках браузера');
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'ru-RU';
-    recognition.continuous = true;
+    recognition.continuous = false; // надёжнее на Chrome — одна фраза за раз
     recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
 
-    let finalTranscript = '';
+    finalRef.current = '';
+    interimRef.current = '';
 
     recognition.onresult = (event: SpeechRecognitionAny) => {
       let interim = '';
+      let finalChunk = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
+        const text = result[0]?.transcript || '';
         if (result.isFinal) {
-          finalTranscript += result[0].transcript + ' ';
+          finalChunk += text + ' ';
         } else {
-          interim += result[0].transcript;
+          interim += text;
         }
       }
-      setTranscript(finalTranscript + interim);
+      if (finalChunk) finalRef.current += finalChunk;
+      interimRef.current = interim;
+      setTranscript(finalRef.current + interim);
     };
 
     recognition.onerror = (event: SpeechRecognitionAny) => {
       console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
+      const errMap: Record<string, string> = {
+        'not-allowed': 'Доступ к микрофону запрещён',
+        'service-not-allowed': 'Сервис распознавания недоступен',
+        'no-speech': 'Речь не обнаружена. Попробуйте ещё раз',
+        'audio-capture': 'Микрофон не найден',
+        'network': 'Нет интернета для распознавания',
+      };
+      setErrorMsg(errMap[event.error] || `Ошибка: ${event.error}`);
     };
 
     recognition.onend = () => {
       setIsRecording(false);
-      if (finalTranscript.trim()) {
-        onTranscript(finalTranscript.trim());
+      // Берём всё, что успели получить: final + interim (если final пустой)
+      const text = (finalRef.current.trim() || interimRef.current.trim());
+      if (text) {
+        onTranscript(text);
+        setTranscript('');
+        setErrorMsg('');
+      } else if (!errorMsg) {
+        setErrorMsg('Не удалось распознать речь. Попробуйте ещё раз');
       }
     };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
-    setTranscript('');
-  }, [onTranscript]);
+    try {
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+      setTranscript('');
+    } catch (e) {
+      console.error('Failed to start recognition:', e);
+      setErrorMsg('Не удалось запустить распознавание');
+      setIsRecording(false);
+    }
+  }, [onTranscript, errorMsg]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
@@ -99,7 +140,7 @@ export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderP
       </button>
 
       {isRecording && (
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-fadeIn">
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-fadeIn z-50">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
             Запись... Говорите
@@ -109,6 +150,12 @@ export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderP
               {transcript}
             </div>
           )}
+        </div>
+      )}
+
+      {!isRecording && errorMsg && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-fadeIn z-50 max-w-[240px]">
+          {errorMsg}
         </div>
       )}
     </div>
