@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v16_company_order'; // bump to force re-init
+const DB_VERSION = 'v17_dynamica_tech'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -337,11 +337,14 @@ async function initDb() {
       await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
         VALUES ('Semmar', 'semmar', '📦', '#3b82f6', 'Вторая компания холдинга')`;
     }
-    // Dynamic tech — третья компания холдинга. Добавляем, если ещё нет.
+    // Dynamica tech — третья компания холдинга. Добавляем, если ещё нет.
     const dynamicExists = await sql`SELECT id FROM companies WHERE slug = 'dynamic' LIMIT 1`;
     if (dynamicExists.length === 0) {
       await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
-        VALUES ('Dynamic tech', 'dynamic', '⚡', '#8b5cf6', 'Технологическая компания холдинга')`;
+        VALUES ('Dynamica tech', 'dynamic', '⚡', '#8b5cf6', 'Технологическая компания холдинга')`;
+    } else {
+      // На случай если имя уже было старое — переименовать
+      await sql`UPDATE companies SET name = 'Dynamica tech' WHERE slug = 'dynamic'`;
     }
 
     // Backfill: все существующие данные → Thermo Glass (id=1)
