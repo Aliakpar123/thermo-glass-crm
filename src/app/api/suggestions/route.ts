@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 interface Suggestion {
   deal_id: number;
@@ -14,6 +15,9 @@ interface Suggestion {
 
 export async function GET(request: NextRequest) {
   const sql = await getDb();
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return NextResponse.json([]);
+
   const { searchParams } = new URL(request.url);
   const managerId = searchParams.get('manager_id') || '';
 
@@ -27,7 +31,8 @@ export async function GET(request: NextRequest) {
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE o.status NOT IN ('completed', 'cancelled')
+      WHERE o.company_id = ${companyId}
+        AND o.status NOT IN ('completed', 'cancelled')
         AND o.manager_id = ${Number(managerId)}
       ORDER BY o.updated_at ASC
     `;
@@ -40,7 +45,8 @@ export async function GET(request: NextRequest) {
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE o.status NOT IN ('completed', 'cancelled')
+      WHERE o.company_id = ${companyId}
+        AND o.status NOT IN ('completed', 'cancelled')
       ORDER BY o.updated_at ASC
     `;
   }

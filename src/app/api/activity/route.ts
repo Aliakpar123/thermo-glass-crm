@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET() {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
+    // Only show activity of users who are members of the active company
     const rows = await sql`
-      SELECT * FROM activity_log
-      ORDER BY created_at DESC
+      SELECT al.*
+      FROM activity_log al
+      JOIN user_companies uc ON uc.user_id = al.user_id AND uc.company_id = ${companyId}
+      ORDER BY al.created_at DESC
       LIMIT 50
     `;
     return NextResponse.json(rows);

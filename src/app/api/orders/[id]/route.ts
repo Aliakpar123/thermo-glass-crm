@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,9 @@ export async function GET(
 ) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+
     const { id } = await params;
 
     const rows = await sql`
@@ -14,7 +18,7 @@ export async function GET(
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE o.id = ${Number(id)}
+      WHERE o.id = ${Number(id)} AND o.company_id = ${companyId}
     `;
     const row = rows[0] as Record<string, unknown> | undefined;
 
@@ -55,6 +59,14 @@ export async function PUT(
     } = body;
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${Number(id)}`;
+    // company access check
+    {
+      const cid = await getActiveCompanyId();
+      if (!cid) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+      if (existingRows[0] && Number((existingRows[0] as Record<string, unknown>).company_id) !== cid) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
     const existing = existingRows[0] as Record<string, unknown> | undefined;
     if (!existing) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -187,6 +199,14 @@ export async function DELETE(
     const hard = searchParams.get('hard') === '1';
 
     const existingRows = await sql`SELECT * FROM orders WHERE id = ${orderId}`;
+    // company access check
+    {
+      const cid = await getActiveCompanyId();
+      if (!cid) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+      if (existingRows[0] && Number((existingRows[0] as Record<string, unknown>).company_id) !== cid) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
     if (!existingRows[0]) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
@@ -219,6 +239,14 @@ export async function POST(
 
     if (body?.action === 'restore') {
       const existingRows = await sql`SELECT * FROM orders WHERE id = ${orderId}`;
+    // company access check
+    {
+      const cid = await getActiveCompanyId();
+      if (!cid) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+      if (existingRows[0] && Number((existingRows[0] as Record<string, unknown>).company_id) !== cid) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
       if (!existingRows[0]) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }

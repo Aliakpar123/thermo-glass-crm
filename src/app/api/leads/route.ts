@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const source = searchParams.get('source') || '';
@@ -14,7 +18,8 @@ export async function GET(request: NextRequest) {
       SELECT l.*, u.name as assigned_name
       FROM leads l
       LEFT JOIN users u ON l.assigned_to = u.id
-      WHERE (${status} = '' OR l.status = ${status})
+      WHERE l.company_id = ${companyId}
+        AND (${status} = '' OR l.status = ${status})
         AND (${source} = '' OR l.source = ${source})
         AND (${assignedTo} = '' OR l.assigned_to = ${assignedTo === '' ? 0 : Number(assignedTo)})
         AND (${search} = '' OR l.name ILIKE ${'%' + search + '%'} OR l.phone ILIKE ${'%' + search + '%'} OR l.message ILIKE ${'%' + search + '%'})
@@ -31,6 +36,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+
     const body = await request.json();
     const { name, phone, source, message, status, assigned_to, client_id } = body;
 
@@ -39,8 +47,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO leads (name, phone, source, message, status, assigned_to, client_id)
-      VALUES (${name}, ${phone}, ${source || 'other'}, ${message || ''}, ${status || 'new'}, ${assigned_to || null}, ${client_id || null})
+      INSERT INTO leads (name, phone, source, message, status, assigned_to, client_id, company_id)
+      VALUES (${name}, ${phone}, ${source || 'other'}, ${message || ''}, ${status || 'new'}, ${assigned_to || null}, ${client_id || null}, ${companyId})
       RETURNING *
     `;
 

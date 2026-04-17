@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'all';
 
@@ -15,11 +19,14 @@ export async function GET(request: NextRequest) {
 
     const hasDateFilter = intervalStr !== null;
 
-    // Get all managers
+    // Only members of the active company
     const managers = await sql`
-      SELECT id, name, email, role FROM users
-      WHERE role IN ('client_manager', 'admin', 'order_manager', 'delivery_manager', 'accountant')
-      ORDER BY name
+      SELECT u.id, u.name, u.email, u.role
+      FROM users u
+      JOIN user_companies uc ON uc.user_id = u.id
+      WHERE uc.company_id = ${companyId}
+        AND u.role IN ('client_manager', 'admin', 'order_manager', 'delivery_manager', 'accountant')
+      ORDER BY u.name
     `;
 
     const staffKpi = await Promise.all((managers as Array<Record<string, unknown>>).map(async (manager) => {
@@ -32,42 +39,42 @@ export async function GET(request: NextRequest) {
       if (hasDateFilter) {
         leadsCountRow = await sql`
           SELECT COUNT(*)::int as count FROM leads l
-          WHERE l.assigned_to = ${manager.id} AND l.created_at >= NOW() - ${intervalStr}::interval
+          WHERE l.assigned_to = ${manager.id} AND l.company_id = ${companyId} AND l.created_at >= NOW() - ${intervalStr}::interval
         `;
         ordersCountRow = await sql`
           SELECT COUNT(*)::int as count FROM orders o
-          WHERE o.manager_id = ${manager.id} AND o.created_at >= NOW() - ${intervalStr}::interval
+          WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.created_at >= NOW() - ${intervalStr}::interval
         `;
         ordersSentRow = await sql`
           SELECT COUNT(*)::int as count FROM orders o
-          WHERE o.manager_id = ${manager.id} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed') AND o.created_at >= NOW() - ${intervalStr}::interval
+          WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed') AND o.created_at >= NOW() - ${intervalStr}::interval
         `;
         ordersCompletedRow = await sql`
           SELECT COUNT(*)::int as count FROM orders o
-          WHERE o.manager_id = ${manager.id} AND o.status = 'completed' AND o.created_at >= NOW() - ${intervalStr}::interval
+          WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status = 'completed' AND o.created_at >= NOW() - ${intervalStr}::interval
         `;
         revenueRow = await sql`
           SELECT COALESCE(SUM(o.amount), 0)::numeric as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END)::numeric as avg_check
-          FROM orders o WHERE o.manager_id = ${manager.id} AND o.status != 'cancelled' AND o.created_at >= NOW() - ${intervalStr}::interval
+          FROM orders o WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status != 'cancelled' AND o.created_at >= NOW() - ${intervalStr}::interval
         `;
       } else {
         leadsCountRow = await sql`
-          SELECT COUNT(*)::int as count FROM leads l WHERE l.assigned_to = ${manager.id}
+          SELECT COUNT(*)::int as count FROM leads l WHERE l.assigned_to = ${manager.id} AND l.company_id = ${companyId}
         `;
         ordersCountRow = await sql`
-          SELECT COUNT(*)::int as count FROM orders o WHERE o.manager_id = ${manager.id}
+          SELECT COUNT(*)::int as count FROM orders o WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId}
         `;
         ordersSentRow = await sql`
           SELECT COUNT(*)::int as count FROM orders o
-          WHERE o.manager_id = ${manager.id} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed')
+          WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status IN ('factory', 'production', 'delivery', 'installation', 'completed')
         `;
         ordersCompletedRow = await sql`
           SELECT COUNT(*)::int as count FROM orders o
-          WHERE o.manager_id = ${manager.id} AND o.status = 'completed'
+          WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status = 'completed'
         `;
         revenueRow = await sql`
           SELECT COALESCE(SUM(o.amount), 0)::numeric as total_revenue, AVG(CASE WHEN o.amount > 0 THEN o.amount END)::numeric as avg_check
-          FROM orders o WHERE o.manager_id = ${manager.id} AND o.status != 'cancelled'
+          FROM orders o WHERE o.manager_id = ${manager.id} AND o.company_id = ${companyId} AND o.status != 'cancelled'
         `;
       }
 

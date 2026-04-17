@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v13_companies'; // bump to force re-init
+const DB_VERSION = 'v14_full_isolation'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -317,6 +317,10 @@ async function initDb() {
     try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE general_expenses ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE deal_expenses ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE activity_log ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
 
     // Seed компаний
     const companiesCount = await sql`SELECT COUNT(*) as count FROM companies`;
@@ -335,6 +339,10 @@ async function initDb() {
       await sql`UPDATE clients SET company_id = ${thermoId} WHERE company_id IS NULL`;
       await sql`UPDATE tasks SET company_id = ${thermoId} WHERE company_id IS NULL`;
       await sql`UPDATE leads SET company_id = ${thermoId} WHERE company_id IS NULL`;
+      try { await sql`UPDATE general_expenses SET company_id = ${thermoId} WHERE company_id IS NULL`; } catch(e) {}
+      try { await sql`UPDATE deal_expenses SET company_id = ${thermoId} WHERE company_id IS NULL`; } catch(e) {}
+      try { await sql`UPDATE payments SET company_id = ${thermoId} WHERE company_id IS NULL`; } catch(e) {}
+      try { await sql`UPDATE activity_log SET company_id = ${thermoId} WHERE company_id IS NULL`; } catch(e) {}
 
       // Все существующие юзеры → члены Thermo Glass с их текущей ролью
       const users = await sql`SELECT id, role FROM users`;

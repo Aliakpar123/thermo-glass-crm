@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
     const { id } = await params;
     const body = await request.json();
     const {
@@ -25,7 +28,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         UPDATE tasks SET
           status = 'completed',
           completed_at = NOW()
-        WHERE id = ${Number(id)}
+        WHERE id = ${Number(id)} AND company_id = ${companyId}
         RETURNING *
       `;
       if (result.length === 0) {
@@ -40,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         UPDATE tasks SET
           status = 'pending',
           completed_at = NULL
-        WHERE id = ${Number(id)}
+        WHERE id = ${Number(id)} AND company_id = ${companyId}
         RETURNING *
       `;
       if (result.length === 0) {
@@ -61,7 +64,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         assigned_to_name = COALESCE(${assigned_to_name || null}, assigned_to_name),
         order_id = COALESCE(${order_id !== undefined ? order_id : null}, order_id),
         client_id = COALESCE(${client_id !== undefined ? client_id : null}, client_id)
-      WHERE id = ${Number(id)}
+      WHERE id = ${Number(id)} AND company_id = ${companyId}
       RETURNING *
     `;
 
@@ -79,9 +82,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
     const { id } = await params;
 
-    await sql`DELETE FROM tasks WHERE id = ${Number(id)}`;
+    await sql`DELETE FROM tasks WHERE id = ${Number(id)} AND company_id = ${companyId}`;
 
     return NextResponse.json({ success: true });
   } catch (error) {

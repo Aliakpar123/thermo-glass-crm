@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const managerId = searchParams.get('manager_id') || '';
@@ -15,7 +19,8 @@ export async function GET(request: NextRequest) {
       FROM orders o
       LEFT JOIN clients c ON o.client_id = c.id
       LEFT JOIN users u ON o.manager_id = u.id
-      WHERE (${status} = '' OR o.status = ${status})
+      WHERE o.company_id = ${companyId}
+        AND (${status} = '' OR o.status = ${status})
         AND (${managerId} = '' OR o.manager_id = ${managerId === '' ? 0 : Number(managerId)})
         AND (${clientId} = '' OR o.client_id = ${clientId === '' ? 0 : Number(clientId)})
         AND (${search} = '' OR c.name ILIKE ${'%' + search + '%'} OR o.description ILIKE ${'%' + search + '%'} OR o.factory_order_number ILIKE ${'%' + search + '%'})
@@ -32,6 +37,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+
     const body = await request.json();
     const {
       client_id, manager_id, product_type, description,
@@ -49,8 +57,8 @@ export async function POST(request: NextRequest) {
     const orderStatus = status || 'new';
 
     const result = await sql`
-      INSERT INTO orders (client_id, manager_id, lead_id, product_type, description, dimensions, quantity, amount, prepayment, status, factory_order_number, object_city, items_json, heating_type, required_power, multifunctional_glass, glass_color, room_type, room_area, total_area)
-      VALUES (${client_id}, ${mgr}, ${lead_id || null}, ${product_type || 'steklopaket'}, ${description || ''}, ${dimensions || ''}, ${quantity || 1}, ${amount || 0}, ${prepayment || 0}, ${orderStatus}, ${factory_order_number || ''}, ${object_city || ''}, ${items_json || '[]'}, ${heating_type || ''}, ${required_power || 0}, ${multifunctional_glass || 'нет'}, ${glass_color || 'прозрачная'}, ${room_type || ''}, ${room_area || 0}, ${total_area || 0})
+      INSERT INTO orders (client_id, manager_id, lead_id, product_type, description, dimensions, quantity, amount, prepayment, status, factory_order_number, object_city, items_json, heating_type, required_power, multifunctional_glass, glass_color, room_type, room_area, total_area, company_id)
+      VALUES (${client_id}, ${mgr}, ${lead_id || null}, ${product_type || 'steklopaket'}, ${description || ''}, ${dimensions || ''}, ${quantity || 1}, ${amount || 0}, ${prepayment || 0}, ${orderStatus}, ${factory_order_number || ''}, ${object_city || ''}, ${items_json || '[]'}, ${heating_type || ''}, ${required_power || 0}, ${multifunctional_glass || 'нет'}, ${glass_color || 'прозрачная'}, ${room_type || ''}, ${room_area || 0}, ${total_area || 0}, ${companyId})
       RETURNING id
     `;
 

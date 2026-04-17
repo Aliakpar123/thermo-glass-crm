@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(
   request: NextRequest,
@@ -9,11 +10,13 @@ export async function GET(
     const sql = await getDb();
     const { id } = await params;
 
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
     const rows = await sql`
       SELECT c.*, u.name as manager_name
       FROM clients c
       LEFT JOIN users u ON c.assigned_manager_id = u.id
-      WHERE c.id = ${Number(id)}
+      WHERE c.id = ${Number(id)} AND c.company_id = ${companyId}
     `;
 
     if (!rows[0]) {
@@ -37,7 +40,9 @@ export async function PUT(
     const body = await request.json();
     const { name, phone, email, city, address, source, notes, assigned_manager_id } = body;
 
-    const existingRows = await sql`SELECT * FROM clients WHERE id = ${Number(id)}`;
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+    const existingRows = await sql`SELECT * FROM clients WHERE id = ${Number(id)} AND company_id = ${companyId}`;
     const existing = existingRows[0] as Record<string, unknown> | undefined;
     if (!existing) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
@@ -73,7 +78,9 @@ export async function DELETE(
     const sql = await getDb();
     const { id } = await params;
 
-    const existingRows = await sql`SELECT * FROM clients WHERE id = ${Number(id)}`;
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+    const existingRows = await sql`SELECT * FROM clients WHERE id = ${Number(id)} AND company_id = ${companyId}`;
     if (!existingRows[0]) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
