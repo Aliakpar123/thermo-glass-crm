@@ -5,77 +5,62 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { defaultLandingForCompany } from '@/lib/company-modules';
 
-interface Company {
+interface PublicCompany {
   id: number;
   name: string;
   slug: string;
   logo_emoji: string;
   color: string;
   description: string;
-  role: string;
-  is_owner: boolean;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Администратор',
-  client_manager: 'Менеджер клиентов',
-  order_manager: 'Менеджер заказов',
-  delivery_manager: 'Менеджер доставки',
-  accountant: 'Бухгалтер',
-  employee: 'Сотрудник',
-};
-
-// Минималистичный акцент — красный, как на референсе
 const ACCENT = '#c0392b';
 
 export default function SelectCompanyPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<PublicCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Публичная страница — показываем все компании холдинга без авторизации.
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-    if (status === 'authenticated') {
-      fetch('/api/companies')
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setCompanies(data);
-            if (data.length === 1) handleSelect(data[0].id);
-          }
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetch('/api/companies/public')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCompanies(data);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  const handleSelect = async (companyId: number) => {
-    setSelecting(companyId);
-    try {
-      const res = await fetch('/api/companies/active', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: companyId }),
-      });
-      if (res.ok) {
-        const picked = companies.find((c) => c.id === companyId);
-        router.push(defaultLandingForCompany(picked?.slug));
-      } else {
-        alert('Не удалось выбрать компанию');
-        setSelecting(null);
+  const handleSelect = async (company: PublicCompany) => {
+    setSelecting(company.id);
+
+    // Если пользователь уже залогинен — проверяем доступ и сразу заходим.
+    if (status === 'authenticated') {
+      try {
+        const res = await fetch('/api/companies/active', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_id: company.id }),
+        });
+        if (res.ok) {
+          router.push(defaultLandingForCompany(company.slug));
+          return;
+        }
+        // Нет доступа у этого пользователя — переотправим через /login
+      } catch {
+        /* fallthrough */
       }
-    } catch {
-      setSelecting(null);
     }
+
+    // Гость — ведём на логин конкретной компании
+    router.push(`/login?company=${encodeURIComponent(company.slug)}`);
   };
 
-  if (loading || status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-gray-500 text-sm tracking-widest uppercase">Loading</div>
@@ -83,9 +68,10 @@ export default function SelectCompanyPage() {
     );
   }
 
+  const isAuthed = status === 'authenticated';
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
-      {/* Внешняя тёмная рама как на референсе */}
       <div className="w-full max-w-7xl bg-[#eeeeee] relative overflow-hidden" style={{ aspectRatio: '16 / 10', minHeight: '600px' }}>
 
         {/* Top navigation */}
@@ -97,21 +83,31 @@ export default function SelectCompanyPage() {
             >
               Home
             </span>
-            <button
-              onClick={() => router.push('/profile')}
-              className="text-[15px] font-medium text-[#1a1a1a] hover:opacity-60 transition"
-            >
-              Profile
-            </button>
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="text-[15px] font-medium text-[#1a1a1a] hover:opacity-60 transition"
-            >
-              Logout
-            </button>
+            {isAuthed && (
+              <button
+                onClick={() => router.push('/profile')}
+                className="text-[15px] font-medium text-[#1a1a1a] hover:opacity-60 transition"
+              >
+                Profile
+              </button>
+            )}
+            {isAuthed ? (
+              <button
+                onClick={() => signOut({ callbackUrl: '/select-company' })}
+                className="text-[15px] font-medium text-[#1a1a1a] hover:opacity-60 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/login')}
+                className="text-[15px] font-medium text-[#1a1a1a] hover:opacity-60 transition"
+              >
+                Login
+              </button>
+            )}
           </div>
 
-          {/* Hamburger menu */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="flex flex-col gap-[5px] group"
@@ -123,29 +119,40 @@ export default function SelectCompanyPage() {
           </button>
         </nav>
 
-        {/* Dropdown menu */}
         {menuOpen && (
           <div
             className="absolute top-24 right-16 bg-white shadow-2xl z-30 min-w-[220px]"
             onMouseLeave={() => setMenuOpen(false)}
           >
-            <div className="px-6 py-4 border-b border-gray-100">
-              <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Signed in as</div>
-              <div className="text-sm font-medium text-[#1a1a1a]">{session?.user?.name}</div>
-            </div>
-            <button
-              onClick={() => router.push('/profile')}
-              className="w-full text-left px-6 py-3 text-sm text-[#1a1a1a] hover:bg-gray-50 transition"
-            >
-              Profile & Settings
-            </button>
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="w-full text-left px-6 py-3 text-sm hover:bg-gray-50 transition"
-              style={{ color: ACCENT }}
-            >
-              Logout
-            </button>
+            {isAuthed ? (
+              <>
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Signed in as</div>
+                  <div className="text-sm font-medium text-[#1a1a1a]">{session?.user?.name}</div>
+                </div>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-full text-left px-6 py-3 text-sm text-[#1a1a1a] hover:bg-gray-50 transition"
+                >
+                  Profile & Settings
+                </button>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/select-company' })}
+                  className="w-full text-left px-6 py-3 text-sm hover:bg-gray-50 transition"
+                  style={{ color: ACCENT }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full text-left px-6 py-3 text-sm hover:bg-gray-50 transition"
+                style={{ color: ACCENT }}
+              >
+                Login
+              </button>
+            )}
           </div>
         )}
 
@@ -161,12 +168,12 @@ export default function SelectCompanyPage() {
               E1eventy<span style={{ color: ACCENT }}>.</span>
             </h1>
             <p className="text-base text-gray-600 max-w-md leading-relaxed">
-              Выберите компанию холдинга, в которой хотите работать.
-              Все данные, команды и процессы — изолированы.
+              Выберите компанию холдинга. Все данные, команды и процессы — изолированы.
+              Вход в каждую компанию по отдельным учётным данным.
             </p>
           </div>
 
-          {/* RIGHT: same numbered list — just on the right side */}
+          {/* RIGHT: numbered company list */}
           {companies.length > 0 && (
             <div className="w-[420px] relative z-10">
               <div className="border-t border-gray-300">
@@ -176,7 +183,7 @@ export default function SelectCompanyPage() {
                   return (
                     <button
                       key={c.id}
-                      onClick={() => handleSelect(c.id)}
+                      onClick={() => handleSelect(c)}
                       onMouseEnter={() => setHoverIndex(idx)}
                       onMouseLeave={() => setHoverIndex(null)}
                       disabled={selecting !== null}
@@ -199,15 +206,6 @@ export default function SelectCompanyPage() {
                         {c.name}
                       </span>
 
-                      {c.is_owner && (
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 ml-2"
-                          style={{ backgroundColor: ACCENT, color: 'white' }}
-                        >
-                          Owner
-                        </span>
-                      )}
-
                       <span
                         className="ml-auto text-xl transition-all"
                         style={{
@@ -227,12 +225,12 @@ export default function SelectCompanyPage() {
 
           {companies.length === 0 && (
             <div className="w-[420px] text-gray-400 text-sm relative z-10">
-              У вас нет доступа ни к одной компании. Обратитесь к администратору.
+              В холдинге пока нет компаний.
             </div>
           )}
         </div>
 
-        {/* Bottom corner mark */}
+        {/* Bottom corner marks */}
         <div className="absolute bottom-8 right-16 text-[10px] uppercase tracking-[0.3em] text-gray-400 font-medium">
           © {new Date().getFullYear()} E1eventy
         </div>
