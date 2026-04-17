@@ -191,16 +191,11 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 bg-[#111214] text-white min-h-screen flex flex-col">
-      <div className="px-2 py-3 border-b border-white/5">
+      <div className="px-3 pt-3 pb-2">
         <CompanySwitcher />
       </div>
-      <div className="px-4 py-3 border-b border-white/5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[13px] font-semibold tracking-tight text-gray-300">E1eventy Holding</h1>
-            <p className="text-[10px] text-gray-500 mt-0.5">CRM система</p>
-          </div>
-          <div className="flex items-center gap-1">
+      <div className="px-3 py-2 border-b border-white/5">
+        <div className="flex items-center justify-end gap-1">
           <ThemeToggle />
           {/* Notification bell */}
           <div className="relative" ref={panelRef}>
@@ -350,7 +345,6 @@ export default function Sidebar() {
             )}
           </div>
           </div>
-        </div>
       </div>
 
       <nav className="flex-1 px-3 py-3 space-y-0.5">
