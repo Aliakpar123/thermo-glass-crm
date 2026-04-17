@@ -155,7 +155,7 @@ export default function SelectCompanyPage() {
           {/* Headline */}
           <div className="max-w-[55%] relative z-10">
             <div className="text-[11px] tracking-[0.3em] uppercase text-gray-500 mb-6 font-medium">
-              Holding · {session?.user?.name}
+              Holding
             </div>
             <h1 className="text-[96px] leading-[0.95] font-black text-[#1a1a1a] tracking-tight mb-4">
               E1eventy<span style={{ color: ACCENT }}>.</span>
