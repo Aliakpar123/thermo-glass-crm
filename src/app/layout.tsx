@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Thermo Glass KZ - CRM",
-  description: "CRM система для Thermo Glass KZ",
+  title: "E1eventy — CRM",
+  description: "CRM система холдинга E1eventy",
 };
 
 export default function RootLayout({

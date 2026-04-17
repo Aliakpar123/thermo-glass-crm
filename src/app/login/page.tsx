@@ -37,11 +37,11 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="w-12 h-12 bg-[#22c55e] rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-white text-lg font-semibold tracking-tight">TG</span>
+              <span className="text-white text-2xl">✨</span>
             </div>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Thermo Glass KZ</h1>
-          <p className="text-gray-400 text-[13px] mt-1">CRM система</p>
+          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">E1eventy</h1>
+          <p className="text-gray-400 text-[13px] mt-1">Вход в систему</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,7 +60,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none text-gray-900 text-sm transition-all duration-150 bg-white placeholder:text-gray-300"
-              placeholder="admin@thermoglass.kz"
+              placeholder="your@email.kz"
               required
             />
           </div>

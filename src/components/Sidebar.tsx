@@ -29,19 +29,31 @@ interface MentionNotification {
   created_at: string;
 }
 
-const navItems = [
+// Если `companies` не задано — пункт виден во всех компаниях.
+// Если задано — пункт виден только для указанных slug'ов.
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  roles: string[];
+  companies?: string[];
+};
+
+const navItems: NavItem[] = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/deals/archive', label: 'Архив сделок', icon: '🗂️', roles: ['admin'] },
   { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
-  { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'] },
-  { href: '/marketing/wiki', label: 'Wiki Маркетинг', icon: '📖', roles: ['admin'] },
-  { href: '/marketing/content', label: 'Контент', icon: '✍️', roles: ['admin'] },
+  // Маркетинг, Wiki, Контент — только Thermo Glass
+  { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'], companies: ['thermo'] },
+  { href: '/marketing/wiki', label: 'Wiki Маркетинг', icon: '📖', roles: ['admin'], companies: ['thermo'] },
+  { href: '/marketing/content', label: 'Контент', icon: '✍️', roles: ['admin'], companies: ['thermo'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
   { href: '/finance', label: 'Финансы', icon: '💰', roles: ['admin', 'accountant'] },
-  { href: '/semmar', label: 'Semmar', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
+  // Semmar Google Drive — только Thermo Glass (это папка их проекта в Drive)
+  { href: '/semmar', label: 'Semmar Drive', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
 ];
 
 const MANAGER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -83,6 +95,20 @@ export default function Sidebar() {
   const [mentions, setMentions] = useState<MentionNotification[]>([]);
   const [showPanel, setShowPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Slug активной компании — чтобы скрывать пункты, специфичные для Thermo
+  const [activeCompanySlug, setActiveCompanySlug] = useState<string>('');
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/companies').then((r) => r.json()).catch(() => []),
+      fetch('/api/companies/active').then((r) => r.json()).catch(() => ({})),
+    ]).then(([list, active]) => {
+      if (Array.isArray(list) && active?.company_id) {
+        const found = list.find((c: { id: number }) => c.id === Number(active.company_id));
+        if (found) setActiveCompanySlug(found.slug);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!userRole) return;
@@ -187,7 +213,15 @@ export default function Sidebar() {
     }
   }, [showPanel]);
 
-  const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
+  const filteredNav = navItems.filter((item) => {
+    if (!item.roles.includes(userRole)) return false;
+    // Если у пункта задан companies whitelist — показывать только когда активная компания подходит
+    if (item.companies && item.companies.length > 0) {
+      if (!activeCompanySlug) return false;
+      if (!item.companies.includes(activeCompanySlug)) return false;
+    }
+    return true;
+  });
 
   return (
     <aside className="w-56 bg-[#111214] text-white min-h-screen flex flex-col">
