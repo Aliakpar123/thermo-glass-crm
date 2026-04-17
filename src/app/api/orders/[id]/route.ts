@@ -173,3 +173,62 @@ export async function PUT(
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
   }
 }
+
+// DELETE = архивирование (soft delete), ?hard=1 — полное удаление
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const sql = await getDb();
+    const { id } = await params;
+    const orderId = Number(id);
+    const { searchParams } = new URL(request.url);
+    const hard = searchParams.get('hard') === '1';
+
+    const existingRows = await sql`SELECT * FROM orders WHERE id = ${orderId}`;
+    if (!existingRows[0]) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    if (hard) {
+      await sql`DELETE FROM order_history WHERE order_id = ${orderId}`;
+      await sql`DELETE FROM orders WHERE id = ${orderId}`;
+      return NextResponse.json({ message: 'Deal permanently deleted' });
+    }
+
+    // Soft delete — отправляем в архив
+    await sql`UPDATE orders SET archived_at = NOW() WHERE id = ${orderId}`;
+    return NextResponse.json({ message: 'Deal archived' });
+  } catch (error) {
+    console.error('Error deleting/archiving order:', error);
+    return NextResponse.json({ error: 'Failed to delete deal' }, { status: 500 });
+  }
+}
+
+// POST /api/orders/[id] — восстановить из архива
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const sql = await getDb();
+    const { id } = await params;
+    const orderId = Number(id);
+    const body = await request.json().catch(() => ({}));
+
+    if (body?.action === 'restore') {
+      const existingRows = await sql`SELECT * FROM orders WHERE id = ${orderId}`;
+      if (!existingRows[0]) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      await sql`UPDATE orders SET archived_at = NULL, updated_at = NOW() WHERE id = ${orderId}`;
+      return NextResponse.json({ message: 'Deal restored' });
+    }
+
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (error) {
+    console.error('Error in POST order:', error);
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  }
+}

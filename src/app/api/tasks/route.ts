@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assigned_to') || '';
     const createdBy = searchParams.get('created_by') || '';
@@ -15,13 +19,13 @@ export async function GET(request: NextRequest) {
     if (orderId) {
       tasks = await sql`
         SELECT * FROM tasks
-        WHERE order_id = ${Number(orderId)}
+        WHERE order_id = ${Number(orderId)} AND company_id = ${companyId}
         ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, due_date ASC NULLS LAST, created_at DESC
       `;
     } else if (status === 'completed') {
       tasks = await sql`
         SELECT * FROM tasks
-        WHERE status = 'completed'
+        WHERE status = 'completed' AND company_id = ${companyId}
           AND (${assignedTo} = '' OR assigned_to = ${assignedTo === '' ? 0 : Number(assignedTo)})
           AND (${createdBy} = '' OR created_by = ${createdBy === '' ? 0 : Number(createdBy)})
         ORDER BY completed_at DESC NULLS LAST, created_at DESC
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     } else if (status === 'overdue') {
       tasks = await sql`
         SELECT * FROM tasks
-        WHERE status = 'pending' AND due_date < NOW()
+        WHERE status = 'pending' AND due_date < NOW() AND company_id = ${companyId}
           AND (${assignedTo} = '' OR assigned_to = ${assignedTo === '' ? 0 : Number(assignedTo)})
           AND (${createdBy} = '' OR created_by = ${createdBy === '' ? 0 : Number(createdBy)})
         ORDER BY due_date ASC NULLS LAST
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
       // Default: pending tasks
       tasks = await sql`
         SELECT * FROM tasks
-        WHERE status = 'pending'
+        WHERE status = 'pending' AND company_id = ${companyId}
           AND (${assignedTo} = '' OR assigned_to = ${assignedTo === '' ? 0 : Number(assignedTo)})
           AND (${createdBy} = '' OR created_by = ${createdBy === '' ? 0 : Number(createdBy)})
         ORDER BY due_date ASC NULLS LAST, created_at DESC
@@ -62,6 +66,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+
     const body = await request.json();
     const {
       title,
@@ -82,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO tasks (title, description, task_type, priority, due_date, order_id, client_id, assigned_to, assigned_to_name, created_by, created_by_name)
+      INSERT INTO tasks (title, description, task_type, priority, due_date, order_id, client_id, assigned_to, assigned_to_name, created_by, created_by_name, company_id)
       VALUES (
         ${title},
         ${description || ''},
@@ -94,7 +101,8 @@ export async function POST(request: NextRequest) {
         ${Number(assigned_to)},
         ${assigned_to_name || ''},
         ${Number(created_by)},
-        ${created_by_name || ''}
+        ${created_by_name || ''},
+        ${companyId}
       )
       RETURNING *
     `;

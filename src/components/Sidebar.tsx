@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
+import CompanySwitcher from './CompanySwitcher';
 
 interface Notification {
   id: number;
@@ -30,6 +31,7 @@ interface MentionNotification {
 
 const navItems = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
+  { href: '/deals/archive', label: 'Архив сделок', icon: '🗂️', roles: ['admin'] },
   { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
@@ -189,11 +191,14 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 bg-[#111214] text-white min-h-screen flex flex-col">
-      <div className="px-4 py-4 border-b border-white/5">
+      <div className="px-2 py-3 border-b border-white/5">
+        <CompanySwitcher />
+      </div>
+      <div className="px-4 py-3 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[15px] font-semibold tracking-tight">Thermo Glass KZ</h1>
-            <p className="text-[11px] text-gray-500 mt-0.5">CRM система</p>
+            <h1 className="text-[13px] font-semibold tracking-tight text-gray-300">E1eventy Holding</h1>
+            <p className="text-[10px] text-gray-500 mt-0.5">CRM система</p>
           </div>
           <div className="flex items-center gap-1">
           <ThemeToggle />
@@ -350,7 +355,16 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3 py-3 space-y-0.5">
         {filteredNav.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          // Исключаем более длинные соседние роуты (например /deals/archive) из подсветки /deals
+          const hasLongerMatch = filteredNav.some(
+            (other) =>
+              other.href !== item.href &&
+              other.href.startsWith(item.href + '/') &&
+              (pathname === other.href || pathname.startsWith(other.href + '/'))
+          );
+          const isActive =
+            !hasLongerMatch &&
+            (pathname === item.href || pathname.startsWith(item.href + '/'));
           return (
             <Link
               key={item.href}

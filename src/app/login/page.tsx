@@ -27,7 +27,7 @@ export default function LoginPage() {
     if (res?.error) {
       setError('Неверный email или пароль');
     } else {
-      router.push('/dashboard');
+      router.push('/select-company');
     }
   };
 

@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v11_tasks'; // bump to force re-init
+const DB_VERSION = 'v13_companies'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -123,6 +123,7 @@ async function initDb() {
     try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action_text TEXT DEFAULT ''`; } catch(e) {}
 
     try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_pain TEXT DEFAULT ''`; } catch(e) {}
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP`; } catch(e) {}
 
     try { await sql`CREATE TABLE IF NOT EXISTS pain_points (
       id SERIAL PRIMARY KEY,
@@ -286,6 +287,75 @@ async function initDb() {
     if (nurtay.length === 0) {
       const h = bcrypt.hashSync('manager123', 10);
       await sql`INSERT INTO users (name, email, password_hash, role) VALUES ('Нуртай', 'nurtay@thermoglass.kz', ${h}, 'admin')`;
+    }
+
+    // === MULTI-COMPANY (E1eventy holding) ===
+    // Таблица компаний (тенантов)
+    try { await sql`CREATE TABLE IF NOT EXISTS companies (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      logo_emoji TEXT DEFAULT '🏢',
+      color TEXT DEFAULT '#22c55e',
+      description TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    // Членство пользователей в компаниях (many-to-many + роль в рамках компании)
+    try { await sql`CREATE TABLE IF NOT EXISTS user_companies (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      company_id INTEGER NOT NULL,
+      role TEXT NOT NULL DEFAULT 'employee',
+      is_owner BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(user_id, company_id)
+    )`; } catch(e) {}
+
+    // company_id в ключевых таблицах
+    try { await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+    try { await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
+
+    // Seed компаний
+    const companiesCount = await sql`SELECT COUNT(*) as count FROM companies`;
+    if (Number(companiesCount[0].count) === 0) {
+      await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
+        VALUES ('Thermo Glass KZ', 'thermo', '🔥', '#22c55e', 'Подогреваемое стекло и стеклопакеты')`;
+      await sql`INSERT INTO companies (name, slug, logo_emoji, color, description)
+        VALUES ('Semmar', 'semmar', '📦', '#3b82f6', 'Вторая компания холдинга')`;
+    }
+
+    // Backfill: все существующие данные → Thermo Glass (id=1)
+    const thermo = await sql`SELECT id FROM companies WHERE slug = 'thermo' LIMIT 1`;
+    if (thermo.length > 0) {
+      const thermoId = thermo[0].id;
+      await sql`UPDATE orders SET company_id = ${thermoId} WHERE company_id IS NULL`;
+      await sql`UPDATE clients SET company_id = ${thermoId} WHERE company_id IS NULL`;
+      await sql`UPDATE tasks SET company_id = ${thermoId} WHERE company_id IS NULL`;
+      await sql`UPDATE leads SET company_id = ${thermoId} WHERE company_id IS NULL`;
+
+      // Все существующие юзеры → члены Thermo Glass с их текущей ролью
+      const users = await sql`SELECT id, role FROM users`;
+      for (const u of users) {
+        const exists = await sql`SELECT id FROM user_companies WHERE user_id = ${u.id} AND company_id = ${thermoId}`;
+        if (exists.length === 0) {
+          await sql`INSERT INTO user_companies (user_id, company_id, role, is_owner)
+            VALUES (${u.id}, ${thermoId}, ${u.role}, ${u.role === 'admin'})`;
+        }
+      }
+
+      // Алиакбар (главный админ / group_owner) — также член Semmar как admin
+      const semmar = await sql`SELECT id FROM companies WHERE slug = 'semmar' LIMIT 1`;
+      const aliakbar = await sql`SELECT id FROM users WHERE email = 'admin@thermoglass.kz' LIMIT 1`;
+      if (semmar.length > 0 && aliakbar.length > 0) {
+        const exists2 = await sql`SELECT id FROM user_companies WHERE user_id = ${aliakbar[0].id} AND company_id = ${semmar[0].id}`;
+        if (exists2.length === 0) {
+          await sql`INSERT INTO user_companies (user_id, company_id, role, is_owner)
+            VALUES (${aliakbar[0].id}, ${semmar[0].id}, 'admin', true)`;
+        }
+      }
     }
   } catch (e) {
     console.error('DB init error:', e);

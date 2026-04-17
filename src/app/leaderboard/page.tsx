@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Layout from '@/components/Layout';
+import PointsInfoButton from '@/components/PointsInfoButton';
 
 interface LeaderboardEntry {
   id: number;
@@ -118,6 +119,7 @@ export default function LeaderboardPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <span className="text-3xl">🏆</span> Рейтинг команды
+            <PointsInfoButton />
           </h1>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             {periods.map((p) => (

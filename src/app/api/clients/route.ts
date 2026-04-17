@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json([]);
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const source = searchParams.get('source') || '';
@@ -14,7 +18,8 @@ export async function GET(request: NextRequest) {
         CASE WHEN EXISTS(SELECT 1 FROM leads WHERE client_id = c.id) THEN 'transferred' ELSE 'active' END as status
       FROM clients c
       LEFT JOIN users u ON c.assigned_manager_id = u.id
-      WHERE (${search} = '' OR c.name ILIKE ${'%' + search + '%'} OR c.phone ILIKE ${'%' + search + '%'} OR c.email ILIKE ${'%' + search + '%'} OR c.city ILIKE ${'%' + search + '%'})
+      WHERE c.company_id = ${companyId}
+        AND (${search} = '' OR c.name ILIKE ${'%' + search + '%'} OR c.phone ILIKE ${'%' + search + '%'} OR c.email ILIKE ${'%' + search + '%'} OR c.city ILIKE ${'%' + search + '%'})
         AND (${source} = '' OR c.source = ${source})
         AND (${managerId} = '' OR c.assigned_manager_id = ${managerId === '' ? 0 : Number(managerId)})
       ORDER BY c.created_at DESC
@@ -30,6 +35,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const sql = await getDb();
+    const companyId = await getActiveCompanyId();
+    if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
+
     const body = await request.json();
     const { name, phone, email, city, address, source, notes, assigned_manager_id } = body;
 
@@ -38,8 +46,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO clients (name, phone, email, city, address, source, notes, assigned_manager_id)
-      VALUES (${name}, ${phone}, ${email || ''}, ${city || ''}, ${address || ''}, ${source || 'other'}, ${notes || ''}, ${assigned_manager_id || null})
+      INSERT INTO clients (name, phone, email, city, address, source, notes, assigned_manager_id, company_id)
+      VALUES (${name}, ${phone}, ${email || ''}, ${city || ''}, ${address || ''}, ${source || 'other'}, ${notes || ''}, ${assigned_manager_id || null}, ${companyId})
       RETURNING *
     `;
 
