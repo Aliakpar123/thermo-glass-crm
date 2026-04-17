@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { defaultLandingForCompany } from '@/lib/company-modules';
 
 interface Company {
   id: number;
@@ -61,7 +62,8 @@ export default function SelectCompanyPage() {
         body: JSON.stringify({ company_id: companyId }),
       });
       if (res.ok) {
-        router.push('/deals');
+        const picked = companies.find((c) => c.id === companyId);
+        router.push(defaultLandingForCompany(picked?.slug));
       } else {
         alert('Не удалось выбрать компанию');
         setSelecting(null);

@@ -39,20 +39,20 @@ type NavItem = {
   companies?: string[];
 };
 
+// Пока CRM настроен только под Thermo Glass. Другие компании холдинга
+// видят пустой воркспейс-заглушку, пока под них не настроят модули.
 const navItems: NavItem[] = [
-  { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
-  { href: '/deals/archive', label: 'Архив сделок', icon: '🗂️', roles: ['admin'] },
-  { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
-  { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
-  { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'] },
-  { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'] },
-  // Маркетинг, Wiki, Контент — только Thermo Glass
+  { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
+  { href: '/deals/archive', label: 'Архив сделок', icon: '🗂️', roles: ['admin'], companies: ['thermo'] },
+  { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
+  { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
+  { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
+  { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'], companies: ['thermo'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'], companies: ['thermo'] },
   { href: '/marketing/wiki', label: 'Wiki Маркетинг', icon: '📖', roles: ['admin'], companies: ['thermo'] },
   { href: '/marketing/content', label: 'Контент', icon: '✍️', roles: ['admin'], companies: ['thermo'] },
-  { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'] },
-  { href: '/finance', label: 'Финансы', icon: '💰', roles: ['admin', 'accountant'] },
-  // Semmar Google Drive — только Thermo Glass (это папка их проекта в Drive)
+  { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'], companies: ['thermo'] },
+  { href: '/finance', label: 'Финансы', icon: '💰', roles: ['admin', 'accountant'], companies: ['thermo'] },
   { href: '/semmar', label: 'Semmar Drive', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
 ];
 
