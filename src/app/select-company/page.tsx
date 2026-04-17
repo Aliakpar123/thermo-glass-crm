@@ -150,10 +150,10 @@ export default function SelectCompanyPage() {
         )}
 
         {/* Content area */}
-        <div className="absolute inset-0 px-16 pt-40 pb-16 flex flex-col justify-between">
+        <div className="absolute inset-0 px-16 pt-40 pb-16 flex items-center">
 
-          {/* Top: headline */}
-          <div className="flex-1 flex flex-col justify-center max-w-[60%] relative z-10">
+          {/* LEFT: headline */}
+          <div className="flex-1 max-w-[55%] relative z-10">
             <div className="text-[11px] tracking-[0.3em] uppercase text-gray-500 mb-6 font-medium">
               Holding
             </div>
@@ -166,9 +166,9 @@ export default function SelectCompanyPage() {
             </p>
           </div>
 
-          {/* Bottom: minimalist numbered list (keep right-side icon buttons too) */}
+          {/* RIGHT: same numbered list — just on the right side */}
           {companies.length > 0 && (
-            <div className="relative z-10 max-w-[55%]">
+            <div className="w-[420px] relative z-10">
               <div className="border-t border-gray-300">
                 {companies.map((c, idx) => {
                   const isHover = hoverIndex === idx;
@@ -180,10 +180,10 @@ export default function SelectCompanyPage() {
                       onMouseEnter={() => setHoverIndex(idx)}
                       onMouseLeave={() => setHoverIndex(null)}
                       disabled={selecting !== null}
-                      className="group w-full flex items-center gap-6 py-5 border-b border-gray-300 text-left transition-all disabled:opacity-50"
+                      className="group w-full flex items-center gap-4 py-5 border-b border-gray-300 text-left transition-all disabled:opacity-50"
                     >
                       <span
-                        className="text-[13px] font-medium tabular-nums w-10"
+                        className="text-[13px] font-medium tabular-nums w-8 shrink-0"
                         style={{ color: isHover ? ACCENT : '#999' }}
                       >
                         {String(idx + 1).padStart(2, '0')}
@@ -193,19 +193,15 @@ export default function SelectCompanyPage() {
                         className="text-2xl font-bold tracking-tight transition-all"
                         style={{
                           color: isHover ? ACCENT : '#1a1a1a',
-                          transform: isHover ? 'translateX(8px)' : 'translateX(0)',
+                          transform: isHover ? 'translateX(6px)' : 'translateX(0)',
                         }}
                       >
                         {c.name}
                       </span>
 
-                      <span className="text-[11px] uppercase tracking-widest text-gray-400 ml-4">
-                        {ROLE_LABELS[c.role] || c.role}
-                      </span>
-
                       {c.is_owner && (
                         <span
-                          className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5"
+                          className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 ml-2"
                           style={{ backgroundColor: ACCENT, color: 'white' }}
                         >
                           Owner
@@ -228,64 +224,13 @@ export default function SelectCompanyPage() {
               </div>
             </div>
           )}
+
+          {companies.length === 0 && (
+            <div className="w-[420px] text-gray-400 text-sm relative z-10">
+              У вас нет доступа ни к одной компании. Обратитесь к администратору.
+            </div>
+          )}
         </div>
-
-        {/* RIGHT: companies as a simple vertical list of buttons */}
-        {companies.length > 0 && (
-          <div className="absolute right-16 top-1/2 -translate-y-1/2 z-10 w-[320px]">
-            <div className="text-[10px] tracking-[0.3em] uppercase text-gray-500 font-semibold mb-4">
-              Компании
-            </div>
-            <div className="space-y-2">
-              {companies.map((c, idx) => {
-                const isHover = hoverIndex === idx;
-                const isLoading = selecting === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => handleSelect(c.id)}
-                    onMouseEnter={() => setHoverIndex(idx)}
-                    onMouseLeave={() => setHoverIndex(null)}
-                    disabled={selecting !== null}
-                    className="group w-full flex items-center gap-4 bg-white border border-gray-300 px-4 py-3 text-left transition-all disabled:opacity-50"
-                    style={{
-                      borderColor: isHover ? ACCENT : '#d1d5db',
-                    }}
-                  >
-                    <span className="text-2xl shrink-0">{c.logo_emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="text-sm font-bold tracking-tight truncate transition"
-                        style={{ color: isHover ? ACCENT : '#1a1a1a' }}
-                      >
-                        {c.name}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-widest text-gray-400 mt-0.5">
-                        {ROLE_LABELS[c.role] || c.role}
-                        {c.is_owner && <span className="ml-2" style={{ color: ACCENT }}>· Owner</span>}
-                      </div>
-                    </div>
-                    <span
-                      className="text-lg transition-all"
-                      style={{
-                        color: isHover ? ACCENT : '#999',
-                        transform: isHover ? 'translateX(2px)' : 'translateX(0)',
-                      }}
-                    >
-                      {isLoading ? '…' : '→'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {companies.length === 0 && (
-          <div className="absolute right-16 top-1/2 -translate-y-1/2 text-gray-400 text-sm z-10">
-            У вас нет доступа ни к одной компании. Обратитесь к администратору.
-          </div>
-        )}
 
         {/* Bottom corner mark */}
         <div className="absolute bottom-8 right-16 text-[10px] uppercase tracking-[0.3em] text-gray-400 font-medium">
