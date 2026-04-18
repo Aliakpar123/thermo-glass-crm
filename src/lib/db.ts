@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v19_whatsapp'; // bump to force re-init
+const DB_VERSION = 'v20_wa_integrations'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -347,6 +347,17 @@ async function initDb() {
     // Дополнительные поля клиента для WhatsApp
     try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_chat_id TEXT DEFAULT ''`; } catch(e) {}
     try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_profile_name TEXT DEFAULT ''`; } catch(e) {}
+
+    // Хранение настроек интеграций на компанию (ключ-значение + тип)
+    try { await sql`CREATE TABLE IF NOT EXISTS company_integrations (
+      id SERIAL PRIMARY KEY,
+      company_id INTEGER NOT NULL,
+      integration_type TEXT NOT NULL,
+      config_json TEXT DEFAULT '{}',
+      enabled BOOLEAN DEFAULT true,
+      updated_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(company_id, integration_type)
+    )`; } catch(e) {}
 
     // Жёстко заданный порядок компаний на странице E1eventy:
     // 1 — Semmar, 2 — Thermo Glass KZ, 3 — Dynamic tech

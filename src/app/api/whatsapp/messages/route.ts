@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import getDb from '@/lib/db';
 import { getActiveCompanyId } from '@/lib/company';
-import { sendWhatsAppText, isGreenApiConfigured } from '@/lib/whatsapp';
+import { sendWhatsAppText, getGreenApiConfigForCompany, isConfigured } from '@/lib/whatsapp';
 
 // GET /api/whatsapp/messages?chat_id=XXX@c.us → все сообщения чата (и помечает входящие как прочитанные)
 export async function GET(request: NextRequest) {
@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
     const companyId = await getActiveCompanyId();
     if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
 
-    if (!isGreenApiConfigured()) {
+    const cfg = await getGreenApiConfigForCompany(companyId);
+    if (!isConfigured(cfg)) {
       return NextResponse.json(
-        { error: 'WhatsApp не подключён. Админ: настройте GREEN_API_ID_INSTANCE и GREEN_API_TOKEN в переменных окружения Vercel.' },
+        { error: 'WhatsApp не подключён. Откройте «Настройки WhatsApp» и введите ID Instance и API Token из green-api.com.' },
         { status: 503 }
       );
     }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     const name = clientRow[0] ? String(clientRow[0].name) : '';
 
     // Отправляем через Green API
-    const sendRes = await sendWhatsAppText(chatId, text);
+    const sendRes = await sendWhatsAppText(cfg, chatId, text);
     if (!sendRes.ok) {
       return NextResponse.json({ error: `Не удалось отправить: ${sendRes.error}` }, { status: 502 });
     }

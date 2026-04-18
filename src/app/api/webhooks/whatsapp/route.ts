@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { phoneFromChatId } from '@/lib/whatsapp';
+import { phoneFromChatId, findCompanyByWebhookToken } from '@/lib/whatsapp';
 
 // Публичный webhook для Green API.
 // URL для Green API: https://<your-app>.vercel.app/api/webhooks/whatsapp?token=<GREEN_API_WEBHOOK_TOKEN>&company=thermo
@@ -26,11 +26,12 @@ interface GreenApiMessageBody {
 }
 
 export async function GET(request: NextRequest) {
-  // Используется Green API'шным «верификатором доступности» — возвращаем 200
+  // Верификатор доступности — просто возвращаем 200 с идентификацией сервиса.
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token') || '';
-  const expected = process.env.GREEN_API_WEBHOOK_TOKEN || '';
-  if (expected && token !== expected) {
+  const envExpected = process.env.GREEN_API_WEBHOOK_TOKEN || '';
+  // Если token не задан в env — пропускаем всех (проверка будет в POST через БД).
+  if (envExpected && token && token !== envExpected) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
   }
   return NextResponse.json({ ok: true, service: 'thermo-crm whatsapp webhook' });
@@ -40,12 +41,21 @@ export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token') || '';
-    const companySlug = searchParams.get('company') || 'thermo';
+    const companySlug = searchParams.get('company') || '';
 
-    // Защита webhook'а токеном (если настроен в env)
-    const expected = process.env.GREEN_API_WEBHOOK_TOKEN || '';
-    if (expected && token !== expected) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
+    // Определение компании:
+    // 1. По токену в БД (предпочтительно — один токен = одна компания)
+    // 2. По ?company=<slug> (совместимость с env-конфигом)
+    let companyIdFromToken: number | null = null;
+    if (token) {
+      companyIdFromToken = await findCompanyByWebhookToken(token);
+    }
+    if (!companyIdFromToken) {
+      // fallback на env
+      const envExpected = process.env.GREEN_API_WEBHOOK_TOKEN || '';
+      if (envExpected && token !== envExpected) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
+      }
     }
 
     const body = (await request.json()) as GreenApiMessageBody;
@@ -78,12 +88,16 @@ export async function POST(request: NextRequest) {
 
     const sql = await getDb();
 
-    // Находим компанию по slug
-    const companies = await sql`SELECT id FROM companies WHERE slug = ${companySlug} LIMIT 1`;
-    if (companies.length === 0) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    let companyId: number;
+    if (companyIdFromToken) {
+      companyId = companyIdFromToken;
+    } else {
+      const companies = await sql`SELECT id FROM companies WHERE slug = ${companySlug || 'thermo'} LIMIT 1`;
+      if (companies.length === 0) {
+        return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+      }
+      companyId = Number(companies[0].id);
     }
-    const companyId = Number(companies[0].id);
 
     // Ищем клиента по телефону в этой компании
     const existing = await sql`

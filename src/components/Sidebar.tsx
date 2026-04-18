@@ -54,6 +54,7 @@ const navItems: NavItem[] = [
   { href: '/marketing/content', label: 'Контент', icon: '✍️', roles: ['admin'], companies: ['thermo'] },
   { href: '/staff', label: 'Сотрудники', icon: '👔', roles: ['admin'], companies: ['thermo'] },
   { href: '/finance', label: 'Финансы', icon: '💰', roles: ['admin', 'accountant'], companies: ['thermo'] },
+  { href: '/settings/whatsapp', label: 'Настройки WhatsApp', icon: '⚙️', roles: ['admin'], companies: ['thermo'] },
   { href: '/semmar', label: 'Semmar Drive', icon: '📁', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
 ];
 
