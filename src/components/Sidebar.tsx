@@ -44,6 +44,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: '/deals', label: 'Сделки', icon: '📋', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/deals/archive', label: 'Архив сделок', icon: '🗂️', roles: ['admin'], companies: ['thermo'] },
+  { href: '/whatsapp', label: 'WhatsApp', icon: '💬', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
@@ -89,6 +90,21 @@ export default function Sidebar() {
   const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const [overdueTasksCount, setOverdueTasksCount] = useState(0);
+  const [whatsappUnread, setWhatsappUnread] = useState(0);
+
+  // WhatsApp непрочитанные
+  useEffect(() => {
+    if (!userRole) return;
+    const fetchUnread = () => {
+      fetch('/api/whatsapp/unread-count')
+        .then((r) => r.json())
+        .then((data) => setWhatsappUnread(Number(data.count || 0)))
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000);
+    return () => clearInterval(interval);
+  }, [userRole]);
 
   // Notifications state
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -408,6 +424,11 @@ export default function Sidebar() {
               {item.href === '/deals' && newLeadsCount > 0 && (
                 <span className="ml-auto bg-[#22c55e] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center">
                   {newLeadsCount}
+                </span>
+              )}
+              {item.href === '/whatsapp' && whatsappUnread > 0 && (
+                <span className="ml-auto bg-[#25D366] text-white text-[10px] font-semibold rounded-full w-4.5 h-4.5 flex items-center justify-center px-1 min-w-[18px]">
+                  {whatsappUnread}
                 </span>
               )}
               {item.href === '/tasks' && pendingTasksCount > 0 && (

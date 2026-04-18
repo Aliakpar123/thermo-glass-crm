@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v18_dynamics_tech'; // bump to force re-init
+const DB_VERSION = 'v19_whatsapp'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -322,6 +322,31 @@ async function initDb() {
     try { await sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE activity_log ADD COLUMN IF NOT EXISTS company_id INTEGER`; } catch(e) {}
     try { await sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 100`; } catch(e) {}
+
+    // WhatsApp integration
+    try { await sql`CREATE TABLE IF NOT EXISTS whatsapp_messages (
+      id SERIAL PRIMARY KEY,
+      company_id INTEGER NOT NULL,
+      client_id INTEGER,
+      wa_chat_id TEXT NOT NULL,
+      wa_phone TEXT NOT NULL,
+      wa_profile_name TEXT DEFAULT '',
+      direction TEXT NOT NULL DEFAULT 'in',
+      message_type TEXT DEFAULT 'text',
+      text TEXT DEFAULT '',
+      media_url TEXT DEFAULT '',
+      provider TEXT DEFAULT 'green-api',
+      provider_msg_id TEXT DEFAULT '',
+      is_read BOOLEAN DEFAULT false,
+      sent_by_user_id INTEGER,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+
+    try { await sql`CREATE INDEX IF NOT EXISTS whatsapp_messages_chat_idx ON whatsapp_messages(company_id, wa_chat_id, created_at DESC)`; } catch(e) {}
+
+    // Дополнительные поля клиента для WhatsApp
+    try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_chat_id TEXT DEFAULT ''`; } catch(e) {}
+    try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_profile_name TEXT DEFAULT ''`; } catch(e) {}
 
     // Жёстко заданный порядок компаний на странице E1eventy:
     // 1 — Semmar, 2 — Thermo Glass KZ, 3 — Dynamic tech
