@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import getDb from '@/lib/db';
 import { getActiveCompanyId } from '@/lib/company';
-import { sendWhatsAppText, getGreenApiConfigForCompany, isConfigured } from '@/lib/whatsapp';
+import { sendWhatsAppText, getWhatsAppConfigForCompany, isConfigured } from '@/lib/whatsapp';
 
 // GET /api/whatsapp/messages?chat_id=XXX@c.us → все сообщения чата (и помечает входящие как прочитанные)
 export async function GET(request: NextRequest) {
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
     const companyId = await getActiveCompanyId();
     if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
 
-    const cfg = await getGreenApiConfigForCompany(companyId);
+    const cfg = await getWhatsAppConfigForCompany(companyId);
     if (!isConfigured(cfg)) {
       return NextResponse.json(
-        { error: 'WhatsApp не подключён. Откройте «Настройки WhatsApp» и введите ID Instance и API Token из green-api.com.' },
+        { error: 'WhatsApp не подключён. Откройте «Настройки WhatsApp» и заполните провайдера.' },
         { status: 503 }
       );
     }

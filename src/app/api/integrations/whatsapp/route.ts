@@ -3,9 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import getDb from '@/lib/db';
 import { getActiveCompanyId } from '@/lib/company';
-import { getGreenApiConfigForCompany } from '@/lib/whatsapp';
+import { getWhatsAppConfigForCompany } from '@/lib/whatsapp';
 
-// Проверка, что юзер — админ в активной компании
 async function requireCompanyAdmin(companyId: number, userId: number): Promise<boolean> {
   const sql = await getDb();
   const rows = await sql`
@@ -13,11 +12,15 @@ async function requireCompanyAdmin(companyId: number, userId: number): Promise<b
     WHERE user_id = ${userId} AND company_id = ${companyId}
     LIMIT 1
   `;
-  const role = rows[0]?.role as string | undefined;
-  return role === 'admin';
+  return rows[0]?.role === 'admin';
 }
 
-// GET /api/integrations/whatsapp — текущие настройки (токен маскируется)
+function maskToken(t: string): string {
+  if (!t) return '';
+  if (t.length < 12) return '***';
+  return `${t.slice(0, 6)}…${t.slice(-4)}`;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = Number((session?.user as { id?: string })?.id);
@@ -29,19 +32,27 @@ export async function GET() {
   const isAdmin = await requireCompanyAdmin(companyId, userId);
   if (!isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
 
-  const cfg = await getGreenApiConfigForCompany(companyId);
+  const cfg = await getWhatsAppConfigForCompany(companyId);
   return NextResponse.json({
-    idInstance: cfg.idInstance,
-    // Маскируем токен при выдаче, чтобы не показывать в UI
-    apiTokenMasked: cfg.apiToken ? `${cfg.apiToken.slice(0, 6)}…${cfg.apiToken.slice(-4)}` : '',
-    hasApiToken: Boolean(cfg.apiToken),
+    provider: cfg.provider,
     webhookToken: cfg.webhookToken,
-    configured: Boolean(cfg.idInstance && cfg.apiToken),
+    greenApi: {
+      idInstance: cfg.greenApi?.idInstance || '',
+      apiTokenMasked: maskToken(cfg.greenApi?.apiToken || ''),
+      hasApiToken: Boolean(cfg.greenApi?.apiToken),
+    },
+    omnichat: {
+      baseUrl: cfg.omnichat?.baseUrl || '',
+      apiKeyMasked: maskToken(cfg.omnichat?.apiKey || ''),
+      hasApiKey: Boolean(cfg.omnichat?.apiKey),
+      channel: cfg.omnichat?.channel || 'whatsapp',
+    },
+    configured:
+      (cfg.provider === 'green-api' && Boolean(cfg.greenApi?.idInstance && cfg.greenApi?.apiToken)) ||
+      (cfg.provider === 'omnichat' && Boolean(cfg.omnichat?.baseUrl && cfg.omnichat?.apiKey)),
   });
 }
 
-// PUT /api/integrations/whatsapp — сохранить настройки
-// body: { idInstance, apiToken?, webhookToken? }
 export async function PUT(request: NextRequest) {
   const session = await getServerSession(authOptions);
   const userId = Number((session?.user as { id?: string })?.id);
@@ -54,30 +65,36 @@ export async function PUT(request: NextRequest) {
   if (!isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
 
   const body = await request.json();
-  const idInstance = String(body.idInstance || '').trim();
-  const apiToken = String(body.apiToken || '').trim();
+  const provider = String(body.provider || 'green-api') as 'green-api' | 'omnichat';
   const webhookToken = String(body.webhookToken || '').trim();
 
-  if (!idInstance) return NextResponse.json({ error: 'idInstance required' }, { status: 400 });
-
   const sql = await getDb();
-
-  // Подтягиваем существующий конфиг, чтобы не затирать токен пустой строкой
   const existing = await sql`
     SELECT config_json FROM company_integrations
     WHERE company_id = ${companyId} AND integration_type = 'whatsapp'
     LIMIT 1
   `;
-
-  let existingCfg: Record<string, string> = {};
+  let existingCfg: Record<string, unknown> = {};
   if (existing.length > 0) {
     try { existingCfg = JSON.parse(String(existing[0].config_json || '{}')); } catch { /* ignore */ }
   }
 
-  const newCfg = {
-    idInstance,
-    apiToken: apiToken || existingCfg.apiToken || '',
-    webhookToken: webhookToken || existingCfg.webhookToken || '',
+  const existingGreen = (existingCfg.greenApi as Record<string, string> | undefined) || {};
+  const existingOmni = (existingCfg.omnichat as Record<string, string> | undefined) || {};
+
+  // Новый конфиг: не затираем токены, если поле пустое.
+  const newCfg: Record<string, unknown> = {
+    provider,
+    webhookToken: webhookToken || String(existingCfg.webhookToken || ''),
+    greenApi: {
+      idInstance: String(body.greenApi?.idInstance || existingGreen.idInstance || '').trim(),
+      apiToken: String(body.greenApi?.apiToken || existingGreen.apiToken || '').trim(),
+    },
+    omnichat: {
+      baseUrl: String(body.omnichat?.baseUrl || existingOmni.baseUrl || '').trim().replace(/\/$/, ''),
+      apiKey: String(body.omnichat?.apiKey || existingOmni.apiKey || '').trim(),
+      channel: String(body.omnichat?.channel || existingOmni.channel || 'whatsapp'),
+    },
   };
   const configJson = JSON.stringify(newCfg);
 
@@ -97,7 +114,6 @@ export async function PUT(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE /api/integrations/whatsapp — отключить интеграцию
 export async function DELETE() {
   const session = await getServerSession(authOptions);
   const userId = Number((session?.user as { id?: string })?.id);

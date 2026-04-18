@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getActiveCompanyId } from '@/lib/company';
-import { checkInstanceState, getGreenApiConfigForCompany } from '@/lib/whatsapp';
+import { checkConnection, getWhatsAppConfigForCompany } from '@/lib/whatsapp';
 
-// GET /api/integrations/whatsapp/test → проверить подключение к Green API
 export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = Number((session?.user as { id?: string })?.id);
@@ -13,7 +12,7 @@ export async function GET() {
   const companyId = await getActiveCompanyId();
   if (!companyId) return NextResponse.json({ error: 'No active company' }, { status: 403 });
 
-  const cfg = await getGreenApiConfigForCompany(companyId);
-  const res = await checkInstanceState(cfg);
-  return NextResponse.json(res);
+  const cfg = await getWhatsAppConfigForCompany(companyId);
+  const res = await checkConnection(cfg);
+  return NextResponse.json({ ...res, provider: cfg.provider });
 }
