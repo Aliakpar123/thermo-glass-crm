@@ -48,6 +48,7 @@ const navItems: NavItem[] = [
   { href: '/tasks', label: 'Задачи', icon: '✅', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/leaderboard', label: 'Рейтинг', icon: '🏆', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
   { href: '/clients', label: 'Контакты', icon: '👥', roles: ['admin', 'order_manager', 'client_manager', 'delivery_manager', 'accountant'], companies: ['thermo'] },
+  { href: '/loyalty', label: 'Лояльность', icon: '💚', roles: ['admin', 'order_manager', 'client_manager'], companies: ['thermo'] },
   { href: '/dashboard', label: 'Дашборд', icon: '📊', roles: ['admin'], companies: ['thermo'] },
   { href: '/marketing', label: 'Аналитика', icon: '📈', roles: ['admin'], companies: ['thermo'] },
   { href: '/marketing/wiki', label: 'Wiki Маркетинг', icon: '📖', roles: ['admin'], companies: ['thermo'] },

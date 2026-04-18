@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v20_wa_integrations'; // bump to force re-init
+const DB_VERSION = 'v21_loyalty_visits'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -347,6 +347,21 @@ async function initDb() {
     // Дополнительные поля клиента для WhatsApp
     try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_chat_id TEXT DEFAULT ''`; } catch(e) {}
     try { await sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS wa_profile_name TEXT DEFAULT ''`; } catch(e) {}
+
+    // Система лояльности: посещаемость клиентов
+    try { await sql`CREATE TABLE IF NOT EXISTS client_visits (
+      id SERIAL PRIMARY KEY,
+      company_id INTEGER NOT NULL,
+      client_id INTEGER NOT NULL,
+      visited_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      channel TEXT DEFAULT 'office',
+      notes TEXT DEFAULT '',
+      created_by INTEGER,
+      created_by_name TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    )`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS client_visits_client_idx ON client_visits(client_id, visited_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS client_visits_company_idx ON client_visits(company_id, visited_at DESC)`; } catch(e) {}
 
     // Хранение настроек интеграций на компанию (ключ-значение + тип)
     try { await sql`CREATE TABLE IF NOT EXISTS company_integrations (

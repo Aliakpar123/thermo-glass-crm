@@ -1,13 +1,24 @@
-// WhatsApp helpers — поддерживают двух провайдеров:
-//   1. green-api  — https://green-api.com (QR-код, быстрый старт)
-//   2. omnichat   — собственный шлюз пользователя (omnichat)
+// WhatsApp helpers — поддерживают трёх провайдеров:
+//   1. meta-cloud — официальный Meta WhatsApp Cloud API (graph.facebook.com)
+//   2. green-api  — https://green-api.com (QR-код, быстрый старт)
+//   3. omnichat   — собственный шлюз пользователя
 // Конфиг хранится в company_integrations.config_json с полем provider.
 
 import getDb from '@/lib/db';
 
 const GREEN_BASE = 'https://api.green-api.com';
+const META_GRAPH_VERSION = 'v21.0';
+const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
-export type WhatsAppProvider = 'green-api' | 'omnichat';
+export type WhatsAppProvider = 'meta-cloud' | 'green-api' | 'omnichat';
+
+export interface MetaCloudCreds {
+  phoneNumberId: string;   // ID номера в Meta
+  accessToken: string;     // Long-lived или System User token
+  appSecret: string;       // App Secret (для подписи webhook'ов) — опционально
+  verifyToken: string;     // Verify Token для GET-handshake от Meta
+  wabaId?: string;         // WhatsApp Business Account ID — информационно
+}
 
 export interface GreenApiCreds {
   idInstance: string;
@@ -15,14 +26,15 @@ export interface GreenApiCreds {
 }
 
 export interface OmnichatCreds {
-  baseUrl: string;   // например http://localhost:3002 или https://omnichat.thermo-glass.kz
-  apiKey: string;    // Bearer token для авторизации в Omnichat
-  channel: string;   // "whatsapp" | "instagram" — канал по умолчанию
+  baseUrl: string;
+  apiKey: string;
+  channel: string;
 }
 
 export interface WhatsAppConfig {
   provider: WhatsAppProvider;
   webhookToken: string;
+  metaCloud?: MetaCloudCreds;
   greenApi?: GreenApiCreds;
   omnichat?: OmnichatCreds;
 }
@@ -55,12 +67,18 @@ export async function getWhatsAppConfigForCompany(companyId: number): Promise<Wh
 }
 
 function normalizeConfig(raw: Record<string, unknown>): WhatsAppConfig {
-  // Поддержка старого формата (без provider — тогда green-api)
   const provider = (raw.provider as WhatsAppProvider) ||
     (raw.idInstance ? 'green-api' : 'green-api');
   return {
     provider,
     webhookToken: String(raw.webhookToken || ''),
+    metaCloud: {
+      phoneNumberId: String((raw.metaCloud as Record<string, unknown>)?.phoneNumberId || ''),
+      accessToken: String((raw.metaCloud as Record<string, unknown>)?.accessToken || ''),
+      appSecret: String((raw.metaCloud as Record<string, unknown>)?.appSecret || ''),
+      verifyToken: String((raw.metaCloud as Record<string, unknown>)?.verifyToken || ''),
+      wabaId: String((raw.metaCloud as Record<string, unknown>)?.wabaId || ''),
+    },
     greenApi: {
       idInstance: String((raw.greenApi as Record<string, unknown>)?.idInstance || raw.idInstance || ''),
       apiToken: String((raw.greenApi as Record<string, unknown>)?.apiToken || raw.apiToken || ''),
@@ -74,6 +92,9 @@ function normalizeConfig(raw: Record<string, unknown>): WhatsAppConfig {
 }
 
 export function isConfigured(cfg: WhatsAppConfig): boolean {
+  if (cfg.provider === 'meta-cloud') {
+    return Boolean(cfg.metaCloud?.phoneNumberId && cfg.metaCloud?.accessToken);
+  }
   if (cfg.provider === 'green-api') {
     return Boolean(cfg.greenApi?.idInstance && cfg.greenApi?.apiToken);
   }
@@ -83,7 +104,7 @@ export function isConfigured(cfg: WhatsAppConfig): boolean {
   return false;
 }
 
-/** Найти компанию, у которой этот webhook_token. */
+/** Найти компанию по webhook_token (используется для любого провайдера). */
 export async function findCompanyByWebhookToken(token: string): Promise<number | null> {
   if (!token) return null;
   const sql = await getDb();
@@ -102,22 +123,96 @@ export async function findCompanyByWebhookToken(token: string): Promise<number |
   return null;
 }
 
+/** Найти компанию по Meta verify_token (отдельно для Meta GET handshake). */
+export async function findCompanyByMetaVerifyToken(token: string): Promise<{ companyId: number; cfg: WhatsAppConfig } | null> {
+  if (!token) return null;
+  const sql = await getDb();
+  try {
+    const rows = await sql`
+      SELECT company_id, config_json FROM company_integrations
+      WHERE integration_type = 'whatsapp' AND enabled = true
+    `;
+    for (const r of rows) {
+      try {
+        const cfg = normalizeConfig(JSON.parse(String(r.config_json || '{}')));
+        if (cfg.provider === 'meta-cloud' && cfg.metaCloud?.verifyToken === token) {
+          return { companyId: Number(r.company_id), cfg };
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* fallthrough */ }
+  return null;
+}
+
+/** Найти компанию по Meta phoneNumberId (для входящих сообщений). */
+export async function findCompanyByMetaPhoneNumberId(phoneNumberId: string): Promise<{ companyId: number; cfg: WhatsAppConfig } | null> {
+  if (!phoneNumberId) return null;
+  const sql = await getDb();
+  try {
+    const rows = await sql`
+      SELECT company_id, config_json FROM company_integrations
+      WHERE integration_type = 'whatsapp' AND enabled = true
+    `;
+    for (const r of rows) {
+      try {
+        const cfg = normalizeConfig(JSON.parse(String(r.config_json || '{}')));
+        if (cfg.provider === 'meta-cloud' && cfg.metaCloud?.phoneNumberId === phoneNumberId) {
+          return { companyId: Number(r.company_id), cfg };
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* fallthrough */ }
+  return null;
+}
+
 // ───────────────── Отправка сообщений ─────────────────
 
 export async function sendWhatsAppText(
   cfg: WhatsAppConfig,
-  chatId: string, // "77011234567@c.us" или phone
+  chatId: string,
   message: string
 ): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   if (!isConfigured(cfg)) return { ok: false, error: 'WhatsApp не настроен' };
 
-  if (cfg.provider === 'green-api') {
-    return sendViaGreenApi(cfg.greenApi!, chatId, message);
-  }
-  if (cfg.provider === 'omnichat') {
-    return sendViaOmnichat(cfg.omnichat!, chatId, message);
-  }
+  if (cfg.provider === 'meta-cloud') return sendViaMetaCloud(cfg.metaCloud!, chatId, message);
+  if (cfg.provider === 'green-api') return sendViaGreenApi(cfg.greenApi!, chatId, message);
+  if (cfg.provider === 'omnichat') return sendViaOmnichat(cfg.omnichat!, chatId, message);
+
   return { ok: false, error: `Unknown provider: ${cfg.provider}` };
+}
+
+async function sendViaMetaCloud(
+  creds: MetaCloudCreds,
+  chatId: string,
+  message: string
+): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  try {
+    // Meta принимает номер без '+', без '@c.us'
+    const to = (phoneFromChatId(chatId) || chatId).replace(/\D/g, '');
+    const res = await fetch(`${META_GRAPH_BASE}/${creds.phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${creds.accessToken}`,
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'text',
+        text: { body: message },
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      return { ok: false, error: `Meta HTTP ${res.status}: ${errText.slice(0, 300)}` };
+    }
+    const data = await res.json();
+    const messageId = String(data?.messages?.[0]?.id || '');
+    return { ok: true, messageId };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'unknown' };
+  }
 }
 
 async function sendViaGreenApi(
@@ -131,9 +226,7 @@ async function sendViaGreenApi(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId, message }),
     });
-    if (!res.ok) {
-      return { ok: false, error: `HTTP ${res.status}: ${await res.text()}` };
-    }
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}: ${await res.text()}` };
     const data = await res.json();
     return { ok: true, messageId: data.idMessage };
   } catch (e) {
@@ -161,9 +254,7 @@ async function sendViaOmnichat(
         text: message,
       }),
     });
-    if (!res.ok) {
-      return { ok: false, error: `HTTP ${res.status}: ${await res.text()}` };
-    }
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}: ${await res.text()}` };
     const data = await res.json().catch(() => ({}));
     return { ok: true, messageId: String(data.message_id || data.id || '') };
   } catch (e) {
@@ -174,6 +265,27 @@ async function sendViaOmnichat(
 // ───────────────── Проверка соединения ─────────────────
 
 export async function checkConnection(cfg: WhatsAppConfig): Promise<{ ok: boolean; state?: string; error?: string }> {
+  if (cfg.provider === 'meta-cloud') {
+    const c = cfg.metaCloud!;
+    if (!c.phoneNumberId || !c.accessToken) return { ok: false, error: 'Не заполнены Phone Number ID и Access Token' };
+    try {
+      const res = await fetch(`${META_GRAPH_BASE}/${c.phoneNumberId}?fields=verified_name,display_phone_number,quality_rating`, {
+        headers: { 'Authorization': `Bearer ${c.accessToken}` },
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return { ok: false, error: `Meta HTTP ${res.status}: ${t.slice(0, 200)}` };
+      }
+      const data = await res.json();
+      return {
+        ok: true,
+        state: `${data.verified_name || 'номер'} · ${data.display_phone_number || ''} · качество: ${data.quality_rating || 'n/a'}`,
+      };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Сетевая ошибка' };
+    }
+  }
+
   if (cfg.provider === 'green-api') {
     const c = cfg.greenApi!;
     if (!c.idInstance || !c.apiToken) return { ok: false, error: 'Не заполнены ID Instance и API Token' };
@@ -186,19 +298,21 @@ export async function checkConnection(cfg: WhatsAppConfig): Promise<{ ok: boolea
       return { ok: false, error: e instanceof Error ? e.message : 'error' };
     }
   }
+
   if (cfg.provider === 'omnichat') {
     const c = cfg.omnichat!;
     if (!c.baseUrl || !c.apiKey) return { ok: false, error: 'Не заполнены URL и API Key Omnichat' };
     try {
       const url = c.baseUrl.replace(/\/$/, '') + '/api/health';
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${c.apiKey}` } });
-      if (!res.ok) return { ok: false, error: `HTTP ${res.status}: Omnichat вернул ${res.status}` };
+      if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
       const data = await res.json().catch(() => ({ status: 'ok' }));
       return { ok: true, state: String(data.status || 'connected') };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : 'Omnichat не отвечает' };
     }
   }
+
   return { ok: false, error: `Unknown provider: ${cfg.provider}` };
 }
 
@@ -214,7 +328,7 @@ export function chatIdFromPhone(phone: string): string {
   return `${digits}@c.us`;
 }
 
-// Обратная совместимость (старый код может звать эту функцию)
+// Обратная совместимость
 export async function getGreenApiConfigForCompany(companyId: number) {
   const cfg = await getWhatsAppConfigForCompany(companyId);
   return {

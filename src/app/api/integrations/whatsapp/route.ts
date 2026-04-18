@@ -36,6 +36,15 @@ export async function GET() {
   return NextResponse.json({
     provider: cfg.provider,
     webhookToken: cfg.webhookToken,
+    metaCloud: {
+      phoneNumberId: cfg.metaCloud?.phoneNumberId || '',
+      accessTokenMasked: maskToken(cfg.metaCloud?.accessToken || ''),
+      hasAccessToken: Boolean(cfg.metaCloud?.accessToken),
+      appSecretMasked: maskToken(cfg.metaCloud?.appSecret || ''),
+      hasAppSecret: Boolean(cfg.metaCloud?.appSecret),
+      verifyToken: cfg.metaCloud?.verifyToken || '',
+      wabaId: cfg.metaCloud?.wabaId || '',
+    },
     greenApi: {
       idInstance: cfg.greenApi?.idInstance || '',
       apiTokenMasked: maskToken(cfg.greenApi?.apiToken || ''),
@@ -48,6 +57,7 @@ export async function GET() {
       channel: cfg.omnichat?.channel || 'whatsapp',
     },
     configured:
+      (cfg.provider === 'meta-cloud' && Boolean(cfg.metaCloud?.phoneNumberId && cfg.metaCloud?.accessToken)) ||
       (cfg.provider === 'green-api' && Boolean(cfg.greenApi?.idInstance && cfg.greenApi?.apiToken)) ||
       (cfg.provider === 'omnichat' && Boolean(cfg.omnichat?.baseUrl && cfg.omnichat?.apiKey)),
   });
@@ -65,7 +75,7 @@ export async function PUT(request: NextRequest) {
   if (!isAdmin) return NextResponse.json({ error: 'Admin only' }, { status: 403 });
 
   const body = await request.json();
-  const provider = String(body.provider || 'green-api') as 'green-api' | 'omnichat';
+  const provider = String(body.provider || 'green-api') as 'meta-cloud' | 'green-api' | 'omnichat';
   const webhookToken = String(body.webhookToken || '').trim();
 
   const sql = await getDb();
@@ -79,6 +89,7 @@ export async function PUT(request: NextRequest) {
     try { existingCfg = JSON.parse(String(existing[0].config_json || '{}')); } catch { /* ignore */ }
   }
 
+  const existingMeta = (existingCfg.metaCloud as Record<string, string> | undefined) || {};
   const existingGreen = (existingCfg.greenApi as Record<string, string> | undefined) || {};
   const existingOmni = (existingCfg.omnichat as Record<string, string> | undefined) || {};
 
@@ -86,6 +97,13 @@ export async function PUT(request: NextRequest) {
   const newCfg: Record<string, unknown> = {
     provider,
     webhookToken: webhookToken || String(existingCfg.webhookToken || ''),
+    metaCloud: {
+      phoneNumberId: String(body.metaCloud?.phoneNumberId ?? existingMeta.phoneNumberId ?? '').trim(),
+      accessToken: String(body.metaCloud?.accessToken || existingMeta.accessToken || '').trim(),
+      appSecret: String(body.metaCloud?.appSecret || existingMeta.appSecret || '').trim(),
+      verifyToken: String(body.metaCloud?.verifyToken ?? existingMeta.verifyToken ?? '').trim(),
+      wabaId: String(body.metaCloud?.wabaId ?? existingMeta.wabaId ?? '').trim(),
+    },
     greenApi: {
       idInstance: String(body.greenApi?.idInstance || existingGreen.idInstance || '').trim(),
       apiToken: String(body.greenApi?.apiToken || existingGreen.apiToken || '').trim(),

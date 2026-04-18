@@ -3,29 +3,50 @@
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 
-type Provider = 'green-api' | 'omnichat';
+type Provider = 'meta-cloud' | 'green-api' | 'omnichat';
 
 interface ConfigState {
   provider: Provider;
   webhookToken: string;
+  metaCloud: {
+    phoneNumberId: string;
+    accessTokenMasked: string;
+    hasAccessToken: boolean;
+    appSecretMasked: string;
+    hasAppSecret: boolean;
+    verifyToken: string;
+    wabaId: string;
+  };
   greenApi: { idInstance: string; apiTokenMasked: string; hasApiToken: boolean };
   omnichat: { baseUrl: string; apiKeyMasked: string; hasApiKey: boolean; channel: string };
   configured: boolean;
 }
 
+const PROVIDER_LABELS: Record<Provider, string> = {
+  'meta-cloud': 'Meta Cloud API',
+  'green-api': 'Green API',
+  'omnichat': 'Omnichat',
+};
+
 export default function WhatsAppSettingsPage() {
   const [config, setConfig] = useState<ConfigState | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Common
-  const [provider, setProvider] = useState<Provider>('omnichat');
+  const [provider, setProvider] = useState<Provider>('meta-cloud');
   const [webhookToken, setWebhookToken] = useState('');
 
-  // Green API fields
+  // Meta Cloud
+  const [phoneNumberId, setPhoneNumberId] = useState('');
+  const [accessToken, setAccessToken] = useState('');
+  const [appSecret, setAppSecret] = useState('');
+  const [verifyToken, setVerifyToken] = useState('');
+  const [wabaId, setWabaId] = useState('');
+
+  // Green API
   const [idInstance, setIdInstance] = useState('');
   const [apiToken, setApiToken] = useState('');
 
-  // Omnichat fields
+  // Omnichat
   const [omniUrl, setOmniUrl] = useState('');
   const [omniKey, setOmniKey] = useState('');
   const [omniChannel, setOmniChannel] = useState('whatsapp');
@@ -40,13 +61,13 @@ export default function WhatsAppSettingsPage() {
     fetch('/api/integrations/whatsapp')
       .then((r) => r.json())
       .then((data) => {
-        if (data?.error) {
-          setError(data.error);
-          return;
-        }
+        if (data?.error) { setError(data.error); return; }
         setConfig(data);
-        setProvider(data.provider || 'omnichat');
+        setProvider(data.provider || 'meta-cloud');
         setWebhookToken(data.webhookToken || '');
+        setPhoneNumberId(data.metaCloud?.phoneNumberId || '');
+        setVerifyToken(data.metaCloud?.verifyToken || '');
+        setWabaId(data.metaCloud?.wabaId || '');
         setIdInstance(data.greenApi?.idInstance || '');
         setOmniUrl(data.omnichat?.baseUrl || '');
         setOmniChannel(data.omnichat?.channel || 'whatsapp');
@@ -55,9 +76,12 @@ export default function WhatsAppSettingsPage() {
   }, []);
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const webhookUrl = provider === 'omnichat'
-    ? (webhookToken ? `${baseUrl}/api/webhooks/omnichat?token=${encodeURIComponent(webhookToken)}` : `${baseUrl}/api/webhooks/omnichat`)
-    : (webhookToken ? `${baseUrl}/api/webhooks/whatsapp?token=${encodeURIComponent(webhookToken)}` : `${baseUrl}/api/webhooks/whatsapp?company=thermo`);
+  const webhookUrl =
+    provider === 'meta-cloud'
+      ? `${baseUrl}/api/webhooks/whatsapp-meta`
+      : provider === 'omnichat'
+      ? (webhookToken ? `${baseUrl}/api/webhooks/omnichat?token=${encodeURIComponent(webhookToken)}` : `${baseUrl}/api/webhooks/omnichat`)
+      : (webhookToken ? `${baseUrl}/api/webhooks/whatsapp?token=${encodeURIComponent(webhookToken)}` : `${baseUrl}/api/webhooks/whatsapp?company=thermo`);
 
   const handleSave = async () => {
     setSaving(true);
@@ -70,6 +94,7 @@ export default function WhatsAppSettingsPage() {
         body: JSON.stringify({
           provider,
           webhookToken,
+          metaCloud: { phoneNumberId, accessToken, appSecret, verifyToken, wabaId },
           greenApi: { idInstance, apiToken },
           omnichat: { baseUrl: omniUrl, apiKey: omniKey, channel: omniChannel },
         }),
@@ -80,8 +105,7 @@ export default function WhatsAppSettingsPage() {
         return;
       }
       setSuccessMsg('Сохранено');
-      setApiToken('');
-      setOmniKey('');
+      setAccessToken(''); setAppSecret(''); setApiToken(''); setOmniKey('');
       const updated = await fetch('/api/integrations/whatsapp').then((r) => r.json());
       setConfig(updated);
     } catch {
@@ -109,10 +133,9 @@ export default function WhatsAppSettingsPage() {
     if (!confirm('Отключить WhatsApp? Настройки сотрутся, переписка сохранится.')) return;
     await fetch('/api/integrations/whatsapp', { method: 'DELETE' });
     setConfig(null);
-    setIdInstance('');
-    setApiToken('');
-    setOmniUrl('');
-    setOmniKey('');
+    setPhoneNumberId(''); setAccessToken(''); setAppSecret(''); setVerifyToken(''); setWabaId('');
+    setIdInstance(''); setApiToken('');
+    setOmniUrl(''); setOmniKey('');
     setWebhookToken('');
     setSuccessMsg('Интеграция отключена');
   };
@@ -143,10 +166,10 @@ export default function WhatsAppSettingsPage() {
             <div className={`w-3 h-3 rounded-full ${config?.configured ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
             <div className="flex-1">
               <div className={`text-sm font-semibold ${config?.configured ? 'text-green-900' : 'text-yellow-900'}`}>
-                {config?.configured ? `Подключено через ${provider === 'omnichat' ? 'Omnichat' : 'Green API'}` : 'Не подключено'}
+                {config?.configured ? `Подключено через ${PROVIDER_LABELS[provider]}` : 'Не подключено'}
               </div>
               <div className={`text-xs ${config?.configured ? 'text-green-700' : 'text-yellow-700'}`}>
-                {config?.configured ? 'Проверьте соединение кнопкой «Проверить»' : 'Заполните данные ниже и сохраните'}
+                {config?.configured ? 'Проверьте соединение кнопкой «Проверить»' : 'Заполните данные и сохраните'}
               </div>
             </div>
             {config?.configured && (
@@ -166,6 +189,14 @@ export default function WhatsAppSettingsPage() {
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="flex border-b border-gray-100">
             <button
+              onClick={() => setProvider('meta-cloud')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition ${
+                provider === 'meta-cloud' ? 'bg-gray-50 text-gray-900 border-b-2 border-[#22c55e]' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              📘 Meta Cloud API <span className="text-[10px] text-gray-400 ml-1">официально, бесплатно</span>
+            </button>
+            <button
               onClick={() => setProvider('omnichat')}
               className={`flex-1 px-6 py-4 text-sm font-medium transition ${
                 provider === 'omnichat' ? 'bg-gray-50 text-gray-900 border-b-2 border-[#22c55e]' : 'text-gray-500 hover:bg-gray-50'
@@ -179,17 +210,101 @@ export default function WhatsAppSettingsPage() {
                 provider === 'green-api' ? 'bg-gray-50 text-gray-900 border-b-2 border-[#22c55e]' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              🟢 Green API <span className="text-[10px] text-gray-400 ml-1">3000/мес free</span>
+              🟢 Green API <span className="text-[10px] text-gray-400 ml-1">QR-код</span>
             </button>
           </div>
 
           <div className="p-6 space-y-4">
-            {provider === 'omnichat' && (
+            {provider === 'meta-cloud' && (
               <>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    URL Omnichat <span className="text-gray-400">(без слеша в конце)</span>
+                    Phone Number ID <span className="text-gray-400">(из Meta App → WhatsApp → API Setup)</span>
                   </label>
+                  <input
+                    type="text"
+                    value={phoneNumberId}
+                    onChange={(e) => setPhoneNumberId(e.target.value)}
+                    placeholder="412345678901234"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Access Token <span className="text-gray-400">(System User permanent token)</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                    placeholder={config?.metaCloud?.hasAccessToken ? `Сохранён: ${config.metaCloud.accessTokenMasked}` : 'EAAxxxxxxxxxxxxxxx'}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                  />
+                  <div className="text-[11px] text-gray-400 mt-1">
+                    Оставьте пустым чтобы не менять уже сохранённый токен
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Verify Token <span className="text-gray-400">(свой секрет)</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={verifyToken}
+                        onChange={(e) => setVerifyToken(e.target.value)}
+                        placeholder="thermo-meta-verify"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVerifyToken(`meta-${Math.random().toString(36).slice(2, 10)}`)}
+                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-700 font-medium"
+                      >
+                        ↻
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-gray-400 mt-1">
+                      Его же впишите в Meta → Webhook
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      App Secret <span className="text-gray-400">(опц., для X-Hub-Signature)</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={appSecret}
+                      onChange={(e) => setAppSecret(e.target.value)}
+                      placeholder={config?.metaCloud?.hasAppSecret ? `Сохранён: ${config.metaCloud.appSecretMasked}` : 'abc123…'}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    WABA ID <span className="text-gray-400">(опц., WhatsApp Business Account ID)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={wabaId}
+                    onChange={(e) => setWabaId(e.target.value)}
+                    placeholder="1252629676770170"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                  />
+                </div>
+              </>
+            )}
+
+            {provider === 'omnichat' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">URL Omnichat</label>
                   <input
                     type="url"
                     value={omniUrl}
@@ -198,21 +313,16 @@ export default function WhatsAppSettingsPage() {
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">API Key</label>
                   <input
                     type="password"
                     value={omniKey}
                     onChange={(e) => setOmniKey(e.target.value)}
-                    placeholder={config?.omnichat?.hasApiKey ? `Сохранён: ${config.omnichat.apiKeyMasked}` : 'вставьте из Omnichat'}
+                    placeholder={config?.omnichat?.hasApiKey ? `Сохранён: ${config.omnichat.apiKeyMasked}` : 'Bearer-токен'}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
                   />
-                  <div className="text-[11px] text-gray-400 mt-1">
-                    Bearer-токен, с которым CRM обращается к Omnichat API
-                  </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Канал по умолчанию</label>
                   <select
@@ -252,27 +362,30 @@ export default function WhatsAppSettingsPage() {
               </>
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                Webhook Token <span className="text-gray-400">(секрет для защиты webhook URL)</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={webhookToken}
-                  onChange={(e) => setWebhookToken(e.target.value)}
-                  placeholder="thermo-wa-secret-2026"
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setWebhookToken(`wa-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`)}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-700 font-medium"
-                >
-                  Сгенерировать
-                </button>
+            {/* Webhook token нужен только для Green API / Omnichat — Meta использует verifyToken выше */}
+            {provider !== 'meta-cloud' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Webhook Token <span className="text-gray-400">(секрет для защиты webhook URL)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={webhookToken}
+                    onChange={(e) => setWebhookToken(e.target.value)}
+                    placeholder="thermo-wa-secret-2026"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e] outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setWebhookToken(`wa-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-700 font-medium"
+                  >
+                    Сгенерировать
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">{error}</div>}
             {successMsg && !error && <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm border border-green-100">{successMsg}</div>}
@@ -293,12 +406,14 @@ export default function WhatsAppSettingsPage() {
         {/* Webhook URL */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3">
           <div className="text-sm font-semibold text-gray-900">
-            Webhook URL {provider === 'omnichat' ? 'для Omnichat' : 'для Green API'}
+            Webhook URL для {PROVIDER_LABELS[provider]}
           </div>
           <p className="text-xs text-gray-500">
-            {provider === 'omnichat'
-              ? 'Настройте в Omnichat: когда приходит входящее сообщение — пусть отправит POST на этот URL.'
-              : 'Вставьте в Green API → Настройки инстанса → «URL для получения уведомлений».'}
+            {provider === 'meta-cloud' && (
+              <>В Meta App → WhatsApp → Configuration → Webhook: вставьте этот URL и Verify Token из поля выше. Подпишитесь на поле <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">messages</code>.</>
+            )}
+            {provider === 'omnichat' && 'В Omnichat настройте: при входящем сообщении отправить POST на этот URL.'}
+            {provider === 'green-api' && 'Вставьте в Green API → Настройки инстанса → «URL для получения уведомлений».'}
           </p>
           <div className="flex gap-2">
             <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono text-gray-700 break-all">
@@ -310,90 +425,60 @@ export default function WhatsAppSettingsPage() {
           </div>
         </div>
 
-        {/* Contract for Omnichat */}
-        {provider === 'omnichat' && (
+        {/* Meta instructions */}
+        {provider === 'meta-cloud' && (
           <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <div className="text-sm font-semibold text-gray-900 mb-3">📋 Контракт Omnichat ↔ CRM</div>
-            <p className="text-xs text-gray-500 mb-4">
-              Omnichat должен реализовать два эндпоинта. Токен из настроек шлётся в заголовке <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">Authorization: Bearer &lt;API Key&gt;</code>.
-            </p>
-
-            <div className="space-y-5 text-sm">
-              <div>
-                <div className="font-medium text-gray-900 mb-1.5">1️⃣ Отправка сообщения (CRM → Omnichat)</div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-[11px] overflow-x-auto">
-{`POST ${omniUrl || '<OMNICHAT_URL>'}/api/messages/send
-Authorization: Bearer <API_KEY>
-Content-Type: application/json
-
-{
-  "channel": "whatsapp",
-  "to": "+77011234567",
-  "text": "Здравствуйте!"
-}
-
-Response: { "ok": true, "message_id": "..." }`}
-                </pre>
-              </div>
-
-              <div>
-                <div className="font-medium text-gray-900 mb-1.5">2️⃣ Health-check (для кнопки «Проверить»)</div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-[11px] overflow-x-auto">
-{`GET ${omniUrl || '<OMNICHAT_URL>'}/api/health
-Authorization: Bearer <API_KEY>
-
-Response: { "status": "ok" }`}
-                </pre>
-              </div>
-
-              <div>
-                <div className="font-medium text-gray-900 mb-1.5">3️⃣ Входящее сообщение (Omnichat → CRM)</div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-[11px] overflow-x-auto">
-{`POST ${webhookUrl}
-Content-Type: application/json
-
-{
-  "channel": "whatsapp",
-  "direction": "in",
-  "from": {
-    "phone": "+77011234567",
-    "name": "Иван",
-    "id": "77011234567@c.us"
-  },
-  "text": "Привет",
-  "message_id": "omnichat-123",
-  "media_url": "https://..."   // опционально
-}`}
-                </pre>
-              </div>
-            </div>
+            <div className="text-sm font-semibold text-gray-900 mb-3">📘 Как получить данные Meta</div>
+            <ol className="space-y-3 text-sm text-gray-700">
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                <div>
+                  Открой <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-[#22c55e] hover:underline font-medium">developers.facebook.com/apps</a> → создай приложение типа <strong>«Business»</strong>, привяжи к бизнес-портфолио.
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                <div>
+                  В приложении → <strong>«Добавить продукт» → «WhatsApp»</strong> → <strong>«API Setup»</strong>.
+                  Там увидишь <strong>Phone Number ID</strong>, <strong>WhatsApp Business Account ID</strong> и <strong>Temporary Access Token</strong> (24 ч — годится для теста).
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                <div>
+                  Для <strong>постоянного токена</strong>: Business Settings → Системные пользователи → создай «Thermo CRM» → добавь WhatsApp актив → сгенерируй токен (Never expire) с разрешениями <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">whatsapp_business_messaging</code> и <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">whatsapp_business_management</code>.
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">4</span>
+                <div>
+                  Вставь Phone Number ID и Access Token в форму выше, сгенерируй Verify Token (или придумай свой) → «Сохранить».
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">5</span>
+                <div>
+                  В Meta App → WhatsApp → Configuration → <strong>Webhook</strong> → «Edit»:
+                  <br/>• <strong>Callback URL</strong>: скопируй наш URL выше
+                  <br/>• <strong>Verify Token</strong>: тот же, что ты ввёл в форму
+                  <br/>• Нажми <strong>«Verify and Save»</strong> — Meta пришлёт handshake, CRM его подтвердит.
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">6</span>
+                <div>
+                  В том же разделе → <strong>«Manage»</strong> → подпишись на поле <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">messages</code>.
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] text-white text-xs font-bold flex items-center justify-center shrink-0">7</span>
+                <div>
+                  Вернись сюда → «Проверить». Должно показать имя номера и качество (quality rating).
+                </div>
+              </li>
+            </ol>
           </div>
         )}
-
-        {/* Quick guide */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <div className="text-sm font-semibold text-gray-900 mb-3">📘 Быстрый старт</div>
-          <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
-            {provider === 'omnichat' ? (
-              <>
-                <li>В Omnichat подключи WhatsApp (Meta Cloud API) или Instagram — это его задача.</li>
-                <li>В Omnichat создай API Key для внешних клиентов (CRM).</li>
-                <li>Вставь URL и API Key Omnichat сюда → «Сохранить».</li>
-                <li>Скопируй наш Webhook URL (выше) и настрой Omnichat чтобы он слал туда входящие.</li>
-                <li>Нажми «Проверить» — должен быть <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">ok</code>.</li>
-              </>
-            ) : (
-              <>
-                <li>Зарегистрируйся на <a href="https://green-api.com/" target="_blank" rel="noopener noreferrer" className="text-[#22c55e] hover:underline">green-api.com</a>.</li>
-                <li>Создай инстанс, получи ID Instance и API Token.</li>
-                <li>Отсканируй QR на телефоне (WhatsApp → Связанные устройства).</li>
-                <li>Вставь ID + Token сюда → «Сохранить».</li>
-                <li>Скопируй Webhook URL и вставь в Green API → Настройки.</li>
-                <li>Нажми «Проверить» — статус <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">authorized</code>.</li>
-              </>
-            )}
-          </ol>
-        </div>
       </div>
     </Layout>
   );
