@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
 
 const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-const DB_VERSION = 'v21_loyalty_visits'; // bump to force re-init
+const DB_VERSION = 'v22_perf_indexes'; // bump to force re-init
 let initializedVersion = '';
 
 async function initDb() {
@@ -442,6 +442,72 @@ async function initDb() {
         }
       }
     }
+
+    // === Индексы под горячие WHERE/ORDER BY/JOIN ===
+    // orders — основной объект, фильтруется по company_id + status/archived_at, сортируется по updated_at/created_at
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_company_active_idx ON orders(company_id, archived_at, status)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_company_updated_idx ON orders(company_id, updated_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_company_created_idx ON orders(company_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_manager_idx ON orders(manager_id)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_client_idx ON orders(client_id)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_lead_idx ON orders(lead_id)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS orders_next_action_idx ON orders(company_id, next_action_date) WHERE next_action_date IS NOT NULL`; } catch(e) {}
+
+    // clients — fast lookup по phone (webhooks) и по company_id + сортировка по created_at
+    try { await sql`CREATE INDEX IF NOT EXISTS clients_company_phone_idx ON clients(company_id, phone)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS clients_company_created_idx ON clients(company_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS clients_company_manager_idx ON clients(company_id, assigned_manager_id)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS clients_wa_chat_idx ON clients(wa_chat_id) WHERE wa_chat_id != ''`; } catch(e) {}
+
+    // leads
+    try { await sql`CREATE INDEX IF NOT EXISTS leads_company_status_idx ON leads(company_id, status)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS leads_company_assigned_idx ON leads(company_id, assigned_to)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS leads_company_created_idx ON leads(company_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS leads_client_idx ON leads(client_id) WHERE client_id IS NOT NULL`; } catch(e) {}
+
+    // user_companies — JOIN почти на каждом запросе (обратный путь company → users)
+    try { await sql`CREATE INDEX IF NOT EXISTS user_companies_company_user_idx ON user_companies(company_id, user_id)`; } catch(e) {}
+
+    // order_history — history per order, changed_by для leaderboard
+    try { await sql`CREATE INDEX IF NOT EXISTS order_history_order_idx ON order_history(order_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS order_history_changed_by_idx ON order_history(changed_by, created_at DESC)`; } catch(e) {}
+
+    // deal_messages / deal_files / calculations / deal_expenses / payments — per-order lookups
+    try { await sql`CREATE INDEX IF NOT EXISTS deal_messages_order_idx ON deal_messages(order_id, created_at ASC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS deal_files_order_idx ON deal_files(order_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS calculations_order_idx ON calculations(order_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS deal_expenses_order_idx ON deal_expenses(order_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS deal_expenses_company_idx ON deal_expenses(company_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS payments_order_idx ON payments(order_id, payment_date DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS payments_company_created_idx ON payments(company_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS payments_company_date_idx ON payments(company_id, payment_date DESC)`; } catch(e) {}
+
+    // general_expenses — фильтруется по company_id + expense_date + category
+    try { await sql`CREATE INDEX IF NOT EXISTS general_expenses_company_date_idx ON general_expenses(company_id, expense_date DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS general_expenses_company_created_idx ON general_expenses(company_id, created_at DESC)`; } catch(e) {}
+
+    // tasks — фильтруется по company_id + status + assigned_to/created_by/order_id + due_date
+    try { await sql`CREATE INDEX IF NOT EXISTS tasks_company_status_idx ON tasks(company_id, status)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS tasks_company_assigned_idx ON tasks(company_id, assigned_to)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS tasks_order_idx ON tasks(order_id) WHERE order_id IS NOT NULL`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date) WHERE due_date IS NOT NULL AND status = 'pending'`; } catch(e) {}
+
+    // activity_log — JOIN по user_id в dashboard/activity, сортировка по created_at
+    try { await sql`CREATE INDEX IF NOT EXISTS activity_log_user_created_idx ON activity_log(user_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS activity_log_created_idx ON activity_log(created_at DESC)`; } catch(e) {}
+
+    // client_comments — per-client lookups + user_id для leaderboard
+    try { await sql`CREATE INDEX IF NOT EXISTS client_comments_client_idx ON client_comments(client_id, created_at DESC)`; } catch(e) {}
+    try { await sql`CREATE INDEX IF NOT EXISTS client_comments_user_idx ON client_comments(user_id, created_at DESC)`; } catch(e) {}
+
+    // mention_notifications — /api/mentions фильтрует по user_id + is_read
+    try { await sql`CREATE INDEX IF NOT EXISTS mention_notifications_user_idx ON mention_notifications(user_id, is_read, created_at DESC)`; } catch(e) {}
+
+    // whatsapp_messages — /unread-count и фильтры по направлению/прочитанности
+    try { await sql`CREATE INDEX IF NOT EXISTS whatsapp_messages_unread_idx ON whatsapp_messages(company_id, direction, is_read)`; } catch(e) {}
+
+    // company_integrations — lookup по company_id + integration_type (UNIQUE уже покрывает)
+    // companies.slug — уже UNIQUE, отдельный индекс не нужен
   } catch (e) {
     console.error('DB init error:', e);
     initializedVersion = '';

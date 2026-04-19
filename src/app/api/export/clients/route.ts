@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const companyId = await getActiveCompanyId();
+    if (!companyId) {
+      return NextResponse.json({ error: 'No active company' }, { status: 403 });
+    }
+
     const sql = await getDb();
     const rows = await sql`
       SELECT name, phone, email, city, source, notes, created_at
       FROM clients
+      WHERE company_id = ${companyId}
       ORDER BY created_at DESC
     `;
 

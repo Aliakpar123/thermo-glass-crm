@@ -1,13 +1,27 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import getDb from '@/lib/db';
+import { getActiveCompanyId } from '@/lib/company';
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const companyId = await getActiveCompanyId();
+    if (!companyId) {
+      return NextResponse.json({ error: 'No active company' }, { status: 403 });
+    }
+
     const sql = await getDb();
     const rows = await sql`
       SELECT o.id, c.name as client_name, o.product_type, o.amount, o.status, o.created_at
       FROM orders o
       LEFT JOIN clients c ON c.id = o.client_id
+      WHERE o.company_id = ${companyId}
       ORDER BY o.created_at DESC
     `;
 
