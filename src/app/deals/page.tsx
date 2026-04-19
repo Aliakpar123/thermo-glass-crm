@@ -193,7 +193,6 @@ function DealCard({
   userRole,
   onTransfer,
   onDelete,
-  suggestion,
 }: {
   deal: Deal;
   status: OrderStatus;
@@ -201,7 +200,6 @@ function DealCard({
   userRole: string;
   onTransfer: (dealId: number) => void;
   onDelete: (dealId: number, clientName: string) => void;
-  suggestion?: Suggestion;
 }) {
   const {
     attributes,
@@ -236,16 +234,6 @@ function DealCard({
           : 'cursor-default'
       }`}
     >
-      {/* Autopilot suggestion badge */}
-      {suggestion && (
-        <div
-          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-400 rounded-full flex items-center justify-center text-[9px] animate-pulse cursor-help z-10 shadow-sm"
-          title={`\u0410\u0432\u0442\u043e\u043f\u0438\u043b\u043e\u0442: ${suggestion.message}`}
-        >
-          <span>{'\uD83E\uDD16'}</span>
-        </div>
-      )}
-
       {/* Row 1: status dot + name + amount + WhatsApp */}
       <div className="flex items-center gap-1.5">
         <span
@@ -363,7 +351,6 @@ function DroppableColumn({
   userRole,
   onTransfer,
   onDelete,
-  suggestionsMap,
 }: {
   status: OrderStatus;
   deals: Deal[];
@@ -372,7 +359,6 @@ function DroppableColumn({
   userRole: string;
   onTransfer: (dealId: number) => void;
   onDelete: (dealId: number, clientName: string) => void;
-  suggestionsMap: Map<number, Suggestion>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const colorHex = STATUS_DOT_COLORS[status];
@@ -427,7 +413,6 @@ function DroppableColumn({
               userRole={userRole}
               onTransfer={onTransfer}
               onDelete={onDelete}
-              suggestion={suggestionsMap.get(deal.id)}
             />
           ))}
         </SortableContext>
@@ -940,14 +925,6 @@ export default function DealsPage() {
     return () => clearInterval(interval);
   }, [userId, isAdmin]);
 
-  // Build suggestions map for deal cards (first suggestion per deal)
-  const suggestionsMap = new Map<number, Suggestion>();
-  for (const s of suggestions) {
-    if (!suggestionsMap.has(s.deal_id) && !dismissedIds.has(s.deal_id)) {
-      suggestionsMap.set(s.deal_id, s);
-    }
-  }
-
   const activeSuggestions = suggestions.filter(s => !dismissedIds.has(s.deal_id));
 
   function fetchDeals() {
@@ -1291,7 +1268,6 @@ export default function DealsPage() {
                       userRole={userRole}
                       onTransfer={handleTransfer}
                       onDelete={handleDeleteDeal}
-                      suggestionsMap={suggestionsMap}
                     />
                   ));
                 })()}
