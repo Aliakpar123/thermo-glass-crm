@@ -264,6 +264,18 @@ function DealCard({
             <WhatsAppIcon />
           </a>
         )}
+        {userRole === 'admin' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(deal.id, deal.client_name || '—'); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="shrink-0 ml-0.5 w-5 h-5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
+            title="Удалить сделку"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Row 2: product + city */}
@@ -323,20 +335,6 @@ function DealCard({
         </div>
       )}
 
-      {/* Admin delete button */}
-      {userRole === 'admin' && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(deal.id, deal.client_name || '—'); }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100"
-          title="Удалить сделку"
-          style={{ opacity: 1 }}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
-          </svg>
-        </button>
-      )}
     </div>
   );
 }
